@@ -217,13 +217,6 @@ class AdminManager {
       if (!originalMap.hasOwnProperty(termID)) {
         added.push(termID);
       } else if (originalMap[termID] !== uploadedMap[termID]) {
-        // Debug logging for suspected false positives
-        console.log(`Detected change in ${termID}:`);
-        console.log(`Original (normalized): "${originalMap[termID]}"`);
-        console.log(`Uploaded (normalized): "${uploadedMap[termID]}"`);
-        console.log(`Original (raw): "${originalRawMap[termID]}"`);
-        console.log(`Uploaded (raw): "${uploadedRawMap[termID]}"`);
-
         // Use raw text for diff display, but normalized text was used for comparison
         modified.push({
           termID,

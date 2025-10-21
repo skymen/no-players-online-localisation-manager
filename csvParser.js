@@ -1,7 +1,41 @@
 /**
  * CSV Parser Module using Papa Parse
  * Centralized CSV parsing functionality for the localization system
+ * 
+ * For browser usage: Include Papa Parse script tag before this module
+ * For Node.js usage: Import Papa Parse and set it on this module
  */
+
+// Papa Parse instance - will be set differently for browser vs Node.js
+let Papa = null;
+
+// For browser environment, try to get Papa from global scope
+if (typeof window !== 'undefined' && window.Papa) {
+  Papa = window.Papa;
+}
+
+// Function to set Papa Parse (for Node.js or manual setup)
+export function setPapaParseInstance(papaInstance) {
+  Papa = papaInstance;
+}
+
+function getPapa() {
+  if (!Papa) {
+    if (typeof window !== 'undefined') {
+      // Browser environment - try to get Papa from window again
+      if (window.Papa) {
+        Papa = window.Papa;
+        return Papa;
+      } else {
+        throw new Error('Papa Parse not found on window object. Please ensure Papa Parse script is loaded before this module.');
+      }
+    } else {
+      // Node.js environment  
+      throw new Error('Papa Parse not initialized. Import Papa Parse and call setPapaParseInstance(Papa) before using this module.');
+    }
+  }
+  return Papa;
+}
 
 /**
  * Parse CSV text into an array of objects
@@ -12,6 +46,7 @@
  */
 export function parseCSV(csvText, options = {}) {
   try {
+    const Papa = getPapa();
     const defaultOptions = {
       header: true,
       skipEmptyLines: true,
@@ -63,6 +98,7 @@ export function generateCSV(data, headers = null) {
   }
 
   try {
+    const Papa = getPapa();
     // If no headers specified, get all unique keys from the data
     if (!headers) {
       const allKeys = new Set();
