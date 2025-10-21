@@ -398,19 +398,14 @@ class AdminManager {
             })
             .join("");
 
-          return `
-          <div class="enhanced-diff-line modified-line">
-            <div class="line-label">Modified Line (Character-level changes):</div>
-            <div class="char-diff-content">${charDiffHtml}</div>
-          </div>
-        `;
+          return `<div><strong>Modified line with character-level diff:</strong><br>${charDiffHtml}</div>`;
         } else {
           const className = part.added
             ? "diff-added"
             : part.removed
             ? "diff-removed"
             : "diff-unchanged";
-          const escapedValue = this.escapeHtml(part.value || "");
+          const escapedValue = part.value ? this.escapeHtml(part.value) : "";
           return `<span class="${className}">${escapedValue}</span>`;
         }
       })
