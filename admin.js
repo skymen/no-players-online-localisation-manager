@@ -5,7 +5,12 @@ import {
   generateLocalizationCSV,
   extractLanguages,
 } from "./csvParser.js";
-import { generateDiffHTML, getDiffSummary } from "./diffModule.js";
+import {
+  generateDiffHTML,
+  getDiffSummary,
+  generateCharDiff,
+  generateEnhancedLineDiff,
+} from "./diffModule.js";
 
 class AdminManager {
   constructor() {
