@@ -387,15 +387,38 @@ class LocalisationManager {
     ];
     const rows = [headers];
 
+    // Check if this is a new language (not in the latest data)
+    const isNewLanguage = !this.availableLanguages.includes(language);
+
     this.data.forEach((row) => {
       if (row.shouldBeTranslated === "TRUE") {
+        const languageText = row[language] || "";
+
+        // Logic for shouldBeTranslated: TRUE if the selected language doesn't have text
+        const shouldBeTranslated = !languageText ? "TRUE" : "FALSE";
+
+        // Logic for translationNeedsToBeUpdated:
+        // - If new language: FALSE (since there's nothing to update)
+        // - If existing language: mirror what's in latest file if shouldBeTranslated was set to FALSE
+        let translationNeedsToBeUpdated;
+        if (isNewLanguage) {
+          translationNeedsToBeUpdated = "FALSE";
+        } else {
+          // If shouldBeTranslated is FALSE (language has text), use the original value
+          // If shouldBeTranslated is TRUE (no text), set to FALSE
+          translationNeedsToBeUpdated =
+            shouldBeTranslated === "FALSE"
+              ? row.translationNeedsToBeUpdated || "FALSE"
+              : "FALSE";
+        }
+
         rows.push([
           row.termID || "",
           row.notes || "",
-          "TRUE",
-          "FALSE",
+          shouldBeTranslated,
+          translationNeedsToBeUpdated,
           row.English || "",
-          row[language] || "",
+          languageText,
         ]);
       }
     });
