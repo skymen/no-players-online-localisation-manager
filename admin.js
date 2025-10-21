@@ -343,14 +343,14 @@ class AdminManager {
             <div class="diff-header">
               <span class="diff-label">Text Changes</span>
               <div class="copy-buttons">
-                <button class="copy-btn" onclick="copyToClipboard('${this.escapeForAttribute(
+                <button class="copy-btn" onclick="copyToClipboard(\`${this.escapeForAttribute(
                   item.oldText || ""
-                )}', 'old')" title="Copy original text">
+                )}\`, 'old')" title="Copy original text">
                   📋 Copy Old
                 </button>
-                <button class="copy-btn" onclick="copyToClipboard('${this.escapeForAttribute(
+                <button class="copy-btn" onclick="copyToClipboard(\`${this.escapeForAttribute(
                   item.newText || ""
-                )}', 'new')" title="Copy new text">
+                )}\`, 'new')" title="Copy new text">
                   📋 Copy New
                 </button>
               </div>
