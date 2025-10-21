@@ -8,6 +8,7 @@
       :root {
         --accent-color: #555e54;
         --link-color: #55bfd9;
+        --button-bg: #007592;
         --secondary-bg: #232121;
         --bg-color: #000000;
         --text-color: #ffffff;
@@ -123,7 +124,7 @@
       }
 
       .btn-link {
-        background: var(--link-color);
+        background: var(--button-bg);
       }
 
       .status {
@@ -413,26 +414,9 @@
           <option value="">Select a language...</option>
         </select>
 
-        <button class="btn" id="confirmLanguageBtn" disabled>
-          Confirm Language
+        <button class="btn btn-link" id="confirmLanguageBtn" disabled>
+          Select Language
         </button>
-        <button class="btn btn-link" id="addNewLanguageBtn">
-          Add New Language
-        </button>
-
-        <div class="add-language-form" id="addLanguageForm">
-          <div class="form-group">
-            <label for="newLanguageName">Language Name:</label>
-            <input
-              type="text"
-              id="newLanguageName"
-              placeholder="e.g., Swedish, Dutch, etc."
-            />
-          </div>
-          <button class="btn btn-link" id="submitNewLanguageBtn">
-            Add Language
-          </button>
-        </div>
       </div>
 
       <div class="step" id="step3">
@@ -441,10 +425,12 @@
           What would you like to do with
           <strong id="selectedLanguageName"></strong>?
         </p>
-        <button class="btn btn-link" id="downloadLatestBtn">
+        <button class="btn btn-link" id="uploadFileBtn">
+          Upload Your File
+        </button>
+        <button class="btn" id="downloadLatestBtn">
           Download Latest Version
         </button>
-        <button class="btn" id="uploadFileBtn">Upload Your File</button>
 
         <div class="file-upload hidden" id="fileUploadArea">
           <input type="file" id="fileInput" accept=".csv" class="hidden" />

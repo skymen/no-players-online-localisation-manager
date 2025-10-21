@@ -34,12 +34,12 @@ class LocalisationManager {
     document
       .getElementById("confirmLanguageBtn")
       .addEventListener("click", () => this.confirmLanguage());
-    document
-      .getElementById("addNewLanguageBtn")
-      .addEventListener("click", () => this.showAddLanguageForm());
-    document
-      .getElementById("submitNewLanguageBtn")
-      .addEventListener("click", () => this.addNewLanguage());
+    // document
+    //   .getElementById("addNewLanguageBtn")
+    //   .addEventListener("click", () => this.showAddLanguageForm());
+    // document
+    //   .getElementById("submitNewLanguageBtn")
+    //   .addEventListener("click", () => this.addNewLanguage());
     document
       .getElementById("downloadLatestBtn")
       .addEventListener("click", () => this.downloadLatestVersion());
