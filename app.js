@@ -403,8 +403,17 @@ class LocalisationManager {
             <div class="diff-summary">
               ${diffSummary.message}
             </div>
-            <div style="margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-color); border-radius: 4px; border-left: 3px solid var(--link-color);">
-              <strong>Your current translation:</strong> ${item.userTranslation}
+            <button class="translation-toggle" id="translation-toggle-${
+              item.termID
+            }" onclick="toggleTranslation('${item.termID}')">
+              Show Current Translation
+            </button>
+            <div class="translation-content" id="translation-content-${
+              item.termID
+            }">
+              <textarea class="translation-textarea" readonly>${this.escapeForTextarea(
+                item.userTranslation
+              )}</textarea>
             </div>
             <div class="diff-header">
               <span class="diff-label">English Text Changes</span>
@@ -493,6 +502,14 @@ class LocalisationManager {
       .replace(/\\/g, "\\\\")
       .replace(/\n/g, "\\n")
       .replace(/\r/g, "\\r");
+  }
+
+  escapeForTextarea(text) {
+    // For textarea content, we just need to escape HTML entities that could break the HTML structure
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   }
 
   downloadProcessedFile() {
