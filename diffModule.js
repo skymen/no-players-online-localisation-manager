@@ -20,10 +20,16 @@ export function generateDiff(oldText, newText, options = {}) {
   const defaultOptions = {
     ignoreWhitespace: false,
     ignoreCase: false,
+    useLineDiff: false, // New option for multiline texts
     ...options,
   };
 
-  // Use word-level diff for better readability
+  // For multiline text, use line-based diff for better results
+  if (defaultOptions.useLineDiff || (oldText && oldText.includes('\n')) || (newText && newText.includes('\n'))) {
+    return generateLineDiff(oldText || "", newText || "", defaultOptions);
+  }
+
+  // Use word-level diff for single-line text
   const diff = Diff.diffWords(oldText || "", newText || "", defaultOptions);
 
   return diff.map((part) => ({
@@ -32,6 +38,88 @@ export function generateDiff(oldText, newText, options = {}) {
     value: part.value,
     count: part.count,
   }));
+}
+
+/**
+ * Generate line-based diff for multiline text
+ * @param {string} oldText - Original text
+ * @param {string} newText - New text
+ * @param {Object} options - Diff options
+ * @returns {Array} Array of diff parts
+ */
+function generateLineDiff(oldText, newText, options) {
+  // Enhanced line-based diff using Longest Common Subsequence (LCS)
+  const lines1 = oldText.split('\n');
+  const lines2 = newText.split('\n');
+  
+  // Use LCS algorithm for better line matching
+  const lcs = computeLCS(lines1, lines2);
+  const diff = [];
+  
+  let i = 0, j = 0;
+  
+  while (i < lines1.length || j < lines2.length) {
+    if (i < lines1.length && j < lines2.length && lines1[i] === lines2[j]) {
+      // Lines match
+      diff.push({ value: lines1[i] + '\n' });
+      i++;
+      j++;
+    } else if (i < lines1.length && (j >= lines2.length || !isInLCS(lines1[i], j, lines2, lcs))) {
+      // Line removed
+      diff.push({ removed: true, value: lines1[i] + '\n' });
+      i++;
+    } else if (j < lines2.length) {
+      // Line added
+      diff.push({ added: true, value: lines2[j] + '\n' });
+      j++;
+    }
+  }
+  
+  return diff.map((part) => ({
+    added: part.added || false,
+    removed: part.removed || false,
+    value: part.value,
+    count: part.count,
+  }));
+}
+
+// Compute Longest Common Subsequence for better diff alignment
+function computeLCS(arr1, arr2) {
+  const m = arr1.length;
+  const n = arr2.length;
+  const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+  
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (arr1[i - 1] === arr2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+  
+  // Backtrack to find LCS
+  const lcs = [];
+  let i = m, j = n;
+  while (i > 0 && j > 0) {
+    if (arr1[i - 1] === arr2[j - 1]) {
+      lcs.unshift({ i: i - 1, j: j - 1, value: arr1[i - 1] });
+      i--;
+      j--;
+    } else if (dp[i - 1][j] > dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+  
+  return lcs;
+}
+
+// Check if a line is part of the LCS at a given position
+function isInLCS(line, pos, arr2, lcs) {
+  return lcs.some(item => item.value === line && item.j >= pos);
 }
 
 /**
@@ -49,10 +137,21 @@ export function generateDiffHTML(oldText, newText, options = {}) {
     addedClass: "diff-added",
     removedClass: "diff-removed",
     unchangedClass: "diff-unchanged",
+    useLineDiff: false, // Auto-detect or force line-based diff
     ...options,
   };
 
-  const diff = generateDiff(oldText, newText, defaultOptions);
+  // Auto-detect multiline text and use appropriate diff method
+  const isMultiline = (oldText && oldText.includes('\n')) || (newText && newText.includes('\n'));
+  
+  let diff;
+  if (defaultOptions.useLineDiff || isMultiline) {
+    // Use line-based diff for multiline text
+    diff = generateDiff(oldText, newText, { ...defaultOptions, useLineDiff: true });
+  } else {
+    // Use word-based diff for single-line text
+    diff = generateDiff(oldText, newText, defaultOptions);
+  }
 
   let html = "";
 
