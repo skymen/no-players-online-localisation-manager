@@ -1,319 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Localisation Manager</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+      :root {
+        --accent-color: #555e54;
+        --link-color: #55bfd9;
+        --secondary-bg: #232121;
+        --bg-color: #000000;
+        --text-color: #ffffff;
+      }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            overflow: hidden;
-        }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: var(--bg-color);
+        color: var(--text-color);
+        min-height: 100vh;
+        padding: 20px;
+      }
 
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+      }
 
-        .header h1 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
+      .header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
 
-        .content {
-            padding: 2rem;
-        }
+      .header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
 
-        .step {
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            border: 2px solid #f0f0f0;
-            border-radius: 8px;
-            transition: border-color 0.3s ease;
-        }
+      .step {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: var(--secondary-bg);
+        border-radius: 8px;
+        display: none;
+      }
 
-        .step.active {
-            border-color: #667eea;
-            background: #f8f9ff;
-        }
+      .step.active {
+        display: block;
+      }
 
-        .step h3 {
-            margin-bottom: 1rem;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+      .step h3 {
+        margin-bottom: 1rem;
+        color: var(--link-color);
+      }
 
-        .step-number {
-            background: #667eea;
-            color: white;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
+      .step p {
+        margin-bottom: 1.5rem;
+        opacity: 0.8;
+      }
 
-        .language-selector {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
+      select {
+        width: 100%;
+        padding: 0.75rem;
+        background: var(--bg-color);
+        color: var(--text-color);
+        border: 2px solid var(--accent-color);
+        border-radius: 4px;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+      }
 
-        .language-option {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 6px;
-            padding: 1rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
-        }
+      .form-group {
+        margin-bottom: 1rem;
+      }
 
-        .language-option:hover {
-            border-color: #667eea;
-            background: #f0f2ff;
-        }
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--link-color);
+      }
 
-        .language-option.selected {
-            border-color: #667eea;
-            background: #667eea;
-            color: white;
-        }
+      .form-group input {
+        width: 100%;
+        padding: 0.75rem;
+        background: var(--bg-color);
+        color: var(--text-color);
+        border: 2px solid var(--accent-color);
+        border-radius: 4px;
+        font-size: 1rem;
+      }
 
-        .custom-language {
-            display: none;
-            margin-top: 1rem;
-            padding: 1rem;
-            background: #f8f9fa;
-            border-radius: 6px;
-        }
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--link-color);
+      }
 
-        .custom-language.show {
-            display: block;
-        }
+      .btn {
+        padding: 0.75rem 1.5rem;
+        background: var(--accent-color);
+        color: var(--text-color);
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+        margin-right: 1rem;
+      }
 
-        .form-group {
-            margin-bottom: 1rem;
-        }
+      .btn:hover {
+        opacity: 0.8;
+      }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #333;
-        }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
 
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e9ecef;
-            border-radius: 6px;
-            font-size: 1rem;
-            transition: border-color 0.2s ease;
-        }
+      .btn-link {
+        background: var(--link-color);
+      }
 
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
+      .status {
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        background: var(--secondary-bg);
+        border-left: 4px solid var(--link-color);
+      }
 
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
+      .hidden {
+        display: none;
+      }
 
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+      .add-language-form {
+        display: none;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: var(--bg-color);
+        border-radius: 4px;
+        border: 1px solid var(--accent-color);
+      }
 
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5a67d8;
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .file-upload {
-            border: 2px dashed #ccc;
-            border-radius: 6px;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: border-color 0.2s ease;
-        }
-
-        .file-upload:hover {
-            border-color: #667eea;
-        }
-
-        .file-upload.dragover {
-            border-color: #667eea;
-            background: #f0f2ff;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .status {
-            padding: 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-        }
-
-        .status.loading {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-        }
-
-        .status.success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-
-        .status.error {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        @media (max-width: 600px) {
-            .action-buttons {
-                flex-direction: column;
-            }
-            
-            .language-selector {
-                grid-template-columns: 1fr;
-            }
-        }
+      .add-language-form.show {
+        display: block;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <h1>🌐 Localisation Manager</h1>
-            <p>Manage translation files for your project</p>
+      <div class="header">
+        <h1>🌐 Localisation Manager</h1>
+        <p>Manage translation files for your project</p>
+      </div>
+
+      <div id="status" class="status hidden"></div>
+
+      <div class="step active" id="step1">
+        <h3>Step 1: Fetching Data</h3>
+        <p>Loading latest translation data...</p>
+      </div>
+
+      <div class="step" id="step2">
+        <h3>Step 2: Select Language</h3>
+        <p>Choose a language to work with:</p>
+
+        <select id="languageSelect">
+          <option value="">Select a language...</option>
+        </select>
+
+        <button class="btn" id="confirmLanguageBtn" disabled>
+          Confirm Language
+        </button>
+        <button class="btn btn-link" id="addNewLanguageBtn">
+          Add New Language
+        </button>
+
+        <div class="add-language-form" id="addLanguageForm">
+          <div class="form-group">
+            <label for="newLanguageName">Language Name:</label>
+            <input
+              type="text"
+              id="newLanguageName"
+              placeholder="e.g., Swedish, Dutch, etc."
+            />
+          </div>
+          <button class="btn btn-link" id="submitNewLanguageBtn">
+            Add Language
+          </button>
         </div>
+      </div>
 
-        <div class="content">
-            <div id="status" class="status hidden"></div>
-
-            <div class="step active" id="step1">
-                <h3><span class="step-number">1</span> Fetch Latest Data</h3>
-                <p>First, let's get the latest translation data from the source.</p>
-                <button class="btn btn-primary" id="fetchDataBtn">
-                    📥 Fetch Latest Data
-                </button>
-            </div>
-
-            <div class="step" id="step2">
-                <h3><span class="step-number">2</span> Select Language</h3>
-                <p>Choose the language you want to work with:</p>
-                
-                <div class="language-selector" id="languageSelector">
-                    <!-- Languages will be populated here -->
-                </div>
-
-                <div class="language-option" id="addCustomLanguage">
-                    ➕ Add New Language
-                </div>
-
-                <div class="custom-language" id="customLanguageForm">
-                    <div class="form-group">
-                        <label for="customLanguageName">Language Name:</label>
-                        <input type="text" id="customLanguageName" placeholder="e.g., Swedish, Dutch, etc.">
-                    </div>
-                    <button class="btn btn-primary" id="addLanguageBtn">Add Language</button>
-                </div>
-            </div>
-
-            <div class="step" id="step3">
-                <h3><span class="step-number">3</span> Choose Action</h3>
-                <p>What would you like to do with the <strong id="selectedLanguageName">selected language</strong>?</p>
-                
-                <div class="action-buttons">
-                    <button class="btn btn-primary" id="downloadLatestBtn">
-                        📄 Download Latest Version
-                    </button>
-                    <button class="btn btn-secondary" id="uploadFileBtn">
-                        📤 Upload Translation File
-                    </button>
-                </div>
-
-                <div class="file-upload hidden" id="fileUploadArea">
-                    <input type="file" id="fileInput" accept=".csv" class="hidden">
-                    <div id="dropZone">
-                        <p>📁 Drop your CSV file here or click to browse</p>
-                        <p style="font-size: 0.9rem; color: #666; margin-top: 0.5rem;">Accepted format: CSV files only</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="step" id="step4">
-                <h3><span class="step-number">4</span> Download Result</h3>
-                <p>Your processed translation file is ready!</p>
-                <a href="#" class="btn btn-primary hidden" id="downloadResultBtn">
-                    💾 Download Processed File
-                </a>
-            </div>
-        </div>
+      <div class="step" id="step3">
+        <h3>Step 3: Download</h3>
+        <p>
+          Download the translation file for
+          <strong id="selectedLanguageName"></strong>:
+        </p>
+        <button class="btn btn-link" id="downloadBtn">Download CSV</button>
+      </div>
     </div>
 
     <script type="module" src="app.js"></script>
-</body>
+  </body>
 </html>
