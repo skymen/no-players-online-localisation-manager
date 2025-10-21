@@ -575,18 +575,20 @@
       };
 
       // Global function for copying text to clipboard
-      window.copyToClipboard = async function (text, type) {
+      window.copyToClipboard = async function (text, type, buttonElement) {
         try {
           await navigator.clipboard.writeText(text);
           // Show a brief success message
-          const btn = event.target;
+          const btn = buttonElement;
           const originalText = btn.textContent;
           btn.textContent = type === "old" ? "✅ Copied Old" : "✅ Copied New";
           btn.style.backgroundColor = "#d4edda";
+          btn.style.color = "#155724";
 
           setTimeout(() => {
             btn.textContent = originalText;
             btn.style.backgroundColor = "";
+            btn.style.color = "";
           }, 1500);
         } catch (err) {
           console.error("Failed to copy text: ", err);
@@ -597,7 +599,7 @@
           textArea.select();
           try {
             document.execCommand("copy");
-            const btn = event.target;
+            const btn = buttonElement;
             const originalText = btn.textContent;
             btn.textContent =
               type === "old" ? "✅ Copied Old" : "✅ Copied New";
