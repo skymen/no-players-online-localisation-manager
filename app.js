@@ -5,6 +5,12 @@ import {
   generateLocalizationCSV,
   extractLanguages,
 } from "./csvParser.js";
+import {
+  generateDiffHTML,
+  getDiffSummary,
+  generateCharDiff,
+  generateEnhancedLineDiff,
+} from "./diffModule.js";
 
 class LocalisationManager {
   constructor() {
@@ -203,6 +209,7 @@ class LocalisationManager {
 
     const needsTranslation = [];
     const needsUpdate = [];
+    const needsUpdateDetails = []; // New: Store detailed info for diff view
     const processedRows = [];
 
     latestData.forEach((latestRow) => {
@@ -230,6 +237,14 @@ class LocalisationManager {
           if (userEnglish !== latestEnglish) {
             translationNeedsToBeUpdated = "TRUE";
             needsUpdate.push(termID);
+
+            // Store detailed info for diff view
+            needsUpdateDetails.push({
+              termID: termID,
+              oldText: userEnglish,
+              newText: latestEnglish,
+              userTranslation: userLanguageText,
+            });
           } else {
             translationNeedsToBeUpdated = "FALSE";
           }
@@ -263,6 +278,7 @@ class LocalisationManager {
     return {
       needsTranslation,
       needsUpdate,
+      needsUpdateDetails, // New: Include detailed info
       totalNeedsTranslation: needsTranslation.length,
       totalNeedsUpdate: needsUpdate.length,
     };
@@ -293,7 +309,7 @@ class LocalisationManager {
     }
 
     // Regular report when translations/updates are needed
-    const html = `
+    let html = `
       <div class="report">
         <h4>Translation Report for ${this.selectedLanguage}</h4>
         <p><strong>${
@@ -319,14 +335,16 @@ class LocalisationManager {
         }
         
         ${
-          report.totalNeedsUpdate > 0
+          report.totalNeedsUpdate > 0 && report.needsUpdateDetails
             ? `
           <div class="spoiler">
             <button class="spoiler-toggle" onclick="this.nextElementSibling.classList.toggle('show')">
-              Show terms needing updates (${report.totalNeedsUpdate})
+              Show terms needing updates with diff view (${
+                report.totalNeedsUpdate
+              })
             </button>
             <div class="spoiler-content">
-              ${report.needsUpdate.map((term) => `<div>${term}</div>`).join("")}
+              ${this.generateUpdatedTermsHTML(report.needsUpdateDetails)}
             </div>
           </div>
         `
@@ -337,6 +355,144 @@ class LocalisationManager {
 
     reportContent.innerHTML = html;
     document.getElementById("downloadProcessedBtn").classList.remove("hidden");
+  }
+
+  generateUpdatedTermsHTML(updatedTerms) {
+    return updatedTerms
+      .map((item, index) => {
+        const diffSummary = getDiffSummary(item.oldText, item.newText);
+
+        // Check if this is multiline
+        const isMultiline = true;
+
+        let diffContent = "";
+
+        if (isMultiline) {
+          // For multiline: Use enhanced diff
+          const enhancedDiff = generateEnhancedLineDiff(
+            item.oldText,
+            item.newText
+          );
+          const enhancedHTML = this.generateEnhancedDiffHTML(enhancedDiff);
+
+          diffContent = `
+            <div class="diff-container">
+              ${enhancedHTML}
+            </div>
+          `;
+        } else {
+          // For single-line: Use character diff
+          const charDiff = generateCharDiff(
+            item.oldText || "",
+            item.newText || ""
+          );
+          const charDiffHTML = this.generateCharDiffHTML(charDiff);
+
+          diffContent = `
+            <div class="diff-container">
+              ${charDiffHTML}
+            </div>
+          `;
+        }
+
+        return `
+          <div class="term-diff-item">
+            <div class="term-diff-title">
+              📝 ${item.termID}
+            </div>
+            <div class="diff-summary">
+              ${diffSummary.message}
+            </div>
+            <div style="margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-color); border-radius: 4px; border-left: 3px solid var(--link-color);">
+              <strong>Your current translation:</strong> ${item.userTranslation}
+            </div>
+            <div class="diff-header">
+              <span class="diff-label">English Text Changes</span>
+              <div class="copy-buttons">
+                <button class="copy-btn" onclick="copyToClipboard(\`${this.escapeForAttribute(
+                  item.oldText || ""
+                )}\`, 'old', this)" title="Copy original text">
+                  📋 Copy Old
+                </button>
+                <button class="copy-btn" onclick="copyToClipboard(\`${this.escapeForAttribute(
+                  item.newText || ""
+                )}\`, 'new', this)" title="Copy new text">
+                  📋 Copy New
+                </button>
+              </div>
+            </div>
+            ${diffContent}
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  generateEnhancedDiffHTML(enhancedDiff) {
+    return enhancedDiff
+      .map((part) => {
+        if (part.lineType === "modified" && part.charDiff) {
+          const charDiffHtml = part.charDiff
+            .map((charPart) => {
+              const className = charPart.added
+                ? "diff-added char-added"
+                : charPart.removed
+                ? "diff-removed char-removed"
+                : "diff-unchanged";
+              const escapedValue = this.escapeHtml(charPart.value);
+              return `<span class="${className}">${escapedValue}</span>`;
+            })
+            .join("");
+
+          return `<div>${charDiffHtml}</div>`;
+        } else {
+          const className = part.added
+            ? "diff-added"
+            : part.removed
+            ? "diff-removed"
+            : "diff-unchanged";
+          const escapedValue = part.value ? this.escapeHtml(part.value) : "";
+          return `<span class="${className}">${escapedValue}</span>`;
+        }
+      })
+      .join("");
+  }
+
+  generateCharDiffHTML(charDiff) {
+    return `
+      <div class="char-diff-container">
+        <div class="char-diff-label">Character-level diff:</div>
+        <div class="char-diff-content">
+          ${charDiff
+            .map((part) => {
+              const className = part.added
+                ? "diff-added char-added"
+                : part.removed
+                ? "diff-removed char-removed"
+                : "diff-unchanged";
+              const escapedValue = this.escapeHtml(part.value);
+              return `<span class="${className}">${escapedValue}</span>`;
+            })
+            .join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    // Convert newlines to <br> tags to preserve line breaks
+    return div.innerHTML.replace(/\n/g, "<br>");
+  }
+
+  escapeForAttribute(text) {
+    return text
+      .replace(/'/g, "&#39;")
+      .replace(/"/g, "&quot;")
+      .replace(/\\/g, "\\\\")
+      .replace(/\n/g, "\\n")
+      .replace(/\r/g, "\\r");
   }
 
   downloadProcessedFile() {
