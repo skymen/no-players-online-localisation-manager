@@ -1,238 +1,261 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Multiline Diff Test</title>
     <script src="https://unpkg.com/diff@5.1.0/dist/diff.min.js"></script>
     <script type="module" src="diffModule.js"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        .test-container {
-            margin: 20px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-        }
-        .test-title {
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .text-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 15px 0;
-        }
-        .text-input {
-            display: flex;
-            flex-direction: column;
-        }
-        .text-input label {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .text-input textarea {
-            width: 100%;
-            height: 120px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 8px;
-            resize: vertical;
-        }
-        .diff-result {
-            margin-top: 15px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-        }
-        .diff-added {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .diff-removed {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .diff-unchanged {
-            background-color: transparent;
-            color: #333;
-        }
-        .stats {
-            margin-top: 10px;
-            font-size: 11px;
-            color: #666;
-        }
-        .run-button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .run-button:hover {
-            background: #0056b3;
-        }
-        .success {
-            color: #28a745;
-            font-weight: bold;
-        }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .test-container {
+        margin: 20px 0;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+      }
+      .test-title {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+      }
+      .text-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin: 15px 0;
+      }
+      .text-input {
+        display: flex;
+        flex-direction: column;
+      }
+      .text-input label {
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+      .text-input textarea {
+        width: 100%;
+        height: 120px;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 8px;
+        resize: vertical;
+      }
+      .diff-result {
+        margin-top: 15px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+      .diff-added {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .diff-removed {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .diff-unchanged {
+        background-color: transparent;
+        color: #333;
+      }
+      .stats {
+        margin-top: 10px;
+        font-size: 11px;
+        color: #666;
+      }
+      .run-button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .run-button:hover {
+        background: #0056b3;
+      }
+      .success {
+        color: #28a745;
+        font-weight: bold;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Multiline Diff Test Suite</h1>
-    <p>This page tests the improved multiline diff functionality. Each test case demonstrates how the algorithm handles different types of multiline text changes.</p>
+    <p>
+      This page tests the improved multiline diff functionality. Each test case
+      demonstrates how the algorithm handles different types of multiline text
+      changes.
+    </p>
 
     <div class="test-container">
-        <div class="test-title">Test 1: Line Removal (Previously Broken)</div>
-        <div class="text-inputs">
-            <div class="text-input">
-                <label>Original Text:</label>
-                <textarea id="test1-old">Line A
+      <div class="test-title">Test 1: Line Removal (Previously Broken)</div>
+      <div class="text-inputs">
+        <div class="text-input">
+          <label>Original Text:</label>
+          <textarea id="test1-old">
+Line A
 Line B
-Line C</textarea>
-            </div>
-            <div class="text-input">
-                <label>New Text:</label>
-                <textarea id="test1-new">Line A
-Line C</textarea>
-            </div>
+Line C</textarea
+          >
         </div>
-        <button class="run-button" onclick="runTest(1)">Run Test</button>
-        <div id="test1-result" class="diff-result"></div>
-        <div id="test1-stats" class="stats"></div>
+        <div class="text-input">
+          <label>New Text:</label>
+          <textarea id="test1-new">
+Line A
+Line C</textarea
+          >
+        </div>
+      </div>
+      <button class="run-button" onclick="runTest(1)">Run Test</button>
+      <div id="test1-result" class="diff-result"></div>
+      <div id="test1-stats" class="stats"></div>
     </div>
 
     <div class="test-container">
-        <div class="test-title">Test 2: Line Reordering (Previously Inefficient)</div>
-        <div class="text-inputs">
-            <div class="text-input">
-                <label>Original Text:</label>
-                <textarea id="test2-old">Alpha
-Beta
-Gamma</textarea>
-            </div>
-            <div class="text-input">
-                <label>New Text:</label>
-                <textarea id="test2-new">Beta
+      <div class="test-title">
+        Test 2: Line Reordering (Previously Inefficient)
+      </div>
+      <div class="text-inputs">
+        <div class="text-input">
+          <label>Original Text:</label>
+          <textarea id="test2-old">
 Alpha
-Gamma</textarea>
-            </div>
+Beta
+Gamma</textarea
+          >
         </div>
-        <button class="run-button" onclick="runTest(2)">Run Test</button>
-        <div id="test2-result" class="diff-result"></div>
-        <div id="test2-stats" class="stats"></div>
+        <div class="text-input">
+          <label>New Text:</label>
+          <textarea id="test2-new">
+Beta
+Alpha
+Gamma</textarea
+          >
+        </div>
+      </div>
+      <button class="run-button" onclick="runTest(2)">Run Test</button>
+      <div id="test2-result" class="diff-result"></div>
+      <div id="test2-stats" class="stats"></div>
     </div>
 
     <div class="test-container">
-        <div class="test-title">Test 3: Complex Multiline Changes</div>
-        <div class="text-inputs">
-            <div class="text-input">
-                <label>Original Text:</label>
-                <textarea id="test3-old">function calculateTotal(items) {
+      <div class="test-title">Test 3: Complex Multiline Changes</div>
+      <div class="text-inputs">
+        <div class="text-input">
+          <label>Original Text:</label>
+          <textarea id="test3-old">
+function calculateTotal(items) {
     let total = 0;
     for (let item of items) {
         total += item.price;
     }
     return total;
-}</textarea>
-            </div>
-            <div class="text-input">
-                <label>New Text:</label>
-                <textarea id="test3-new">function calculateTotal(items, taxRate = 0) {
+}</textarea
+          >
+        </div>
+        <div class="text-input">
+          <label>New Text:</label>
+          <textarea id="test3-new">
+function calculateTotal(items, taxRate = 0) {
     let total = 0;
     for (let item of items) {
         total += item.price * (1 + item.discount || 0);
     }
     total *= (1 + taxRate);
     return Math.round(total * 100) / 100;
-}</textarea>
-            </div>
+}</textarea
+          >
         </div>
-        <button class="run-button" onclick="runTest(3)">Run Test</button>
-        <div id="test3-result" class="diff-result"></div>
-        <div id="test3-stats" class="stats"></div>
+      </div>
+      <button class="run-button" onclick="runTest(3)">Run Test</button>
+      <div id="test3-result" class="diff-result"></div>
+      <div id="test3-stats" class="stats"></div>
     </div>
 
     <div class="test-container">
-        <div class="test-title">Test 4: Interactive Test (Editable)</div>
-        <div class="text-inputs">
-            <div class="text-input">
-                <label>Original Text:</label>
-                <textarea id="test4-old">Edit this text
+      <div class="test-title">Test 4: Interactive Test (Editable)</div>
+      <div class="text-inputs">
+        <div class="text-input">
+          <label>Original Text:</label>
+          <textarea id="test4-old">
+Edit this text
 to test the
 diff algorithm
 with your own
-content</textarea>
-            </div>
-            <div class="text-input">
-                <label>New Text:</label>
-                <textarea id="test4-new">Edit this text
+content</textarea
+          >
+        </div>
+        <div class="text-input">
+          <label>New Text:</label>
+          <textarea id="test4-new">
+Edit this text
 to test the improved
 diff algorithm
 with your own
-custom content</textarea>
-            </div>
+custom content</textarea
+          >
         </div>
-        <button class="run-button" onclick="runTest(4)">Run Test</button>
-        <div id="test4-result" class="diff-result"></div>
-        <div id="test4-stats" class="stats"></div>
+      </div>
+      <button class="run-button" onclick="runTest(4)">Run Test</button>
+      <div id="test4-result" class="diff-result"></div>
+      <div id="test4-stats" class="stats"></div>
     </div>
 
     <script type="module">
-        import { generateDiffHTML, getDiffStats } from './diffModule.js';
+      import { generateDiffHTML, getDiffStats } from "./diffModule.js";
 
-        window.runTest = function(testNumber) {
-            const oldText = document.getElementById(`test${testNumber}-old`).value;
-            const newText = document.getElementById(`test${testNumber}-new`).value;
-            
-            try {
-                // Generate diff with line-based comparison for multiline
-                const diffHtml = generateDiffHTML(oldText, newText, { 
-                    useLineDiff: true,
-                    addedClass: 'diff-added',
-                    removedClass: 'diff-removed',
-                    unchangedClass: 'diff-unchanged'
-                });
-                
-                const stats = getDiffStats(oldText, newText);
-                
-                document.getElementById(`test${testNumber}-result`).innerHTML = diffHtml;
-                document.getElementById(`test${testNumber}-stats`).innerHTML = 
-                    `<span class="success">✓ Test passed</span> - ` +
-                    `Added: ${stats.addedWords} words, ` +
-                    `Removed: ${stats.removedWords} words, ` +
-                    `Unchanged: ${stats.unchangedWords} words`;
-                    
-            } catch (error) {
-                document.getElementById(`test${testNumber}-result`).innerHTML = 
-                    `<span style="color: red;">✗ Error: ${error.message}</span>`;
-                document.getElementById(`test${testNumber}-stats`).innerHTML = '';
-            }
-        };
+      window.runTest = function (testNumber) {
+        const oldText = document.getElementById(`test${testNumber}-old`).value;
+        const newText = document.getElementById(`test${testNumber}-new`).value;
 
-        // Auto-run all tests on page load
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                for (let i = 1; i <= 4; i++) {
-                    runTest(i);
-                }
-            }, 100);
-        });
+        try {
+          // Generate diff with line-based comparison for multiline
+          const diffHtml = generateDiffHTML(oldText, newText, {
+            useLineDiff: true,
+            addedClass: "diff-added",
+            removedClass: "diff-removed",
+            unchangedClass: "diff-unchanged",
+          });
+
+          const stats = getDiffStats(oldText, newText);
+
+          document.getElementById(`test${testNumber}-result`).innerHTML =
+            diffHtml;
+          document.getElementById(`test${testNumber}-stats`).innerHTML =
+            `<span class="success">✓ Test passed</span> - ` +
+            `Added: ${stats.addedWords} words, ` +
+            `Removed: ${stats.removedWords} words, ` +
+            `Unchanged: ${stats.unchangedWords} words`;
+        } catch (error) {
+          document.getElementById(
+            `test${testNumber}-result`
+          ).innerHTML = `<span style="color: red;">✗ Error: ${error.message}</span>`;
+          document.getElementById(`test${testNumber}-stats`).innerHTML = "";
+        }
+      };
+
+      // Auto-run all tests on page load
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          for (let i = 1; i <= 4; i++) {
+            runTest(i);
+          }
+        }, 100);
+      });
     </script>
-</body>
+  </body>
 </html>

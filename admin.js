@@ -392,31 +392,31 @@ class AdminManager {
     // Use the diff library for better line-by-line comparison
     const lineDiff = Diff.diffArrays(oldLines, newLines);
     const changes = [];
-    
-    lineDiff.forEach(part => {
+
+    lineDiff.forEach((part) => {
       if (part.added) {
         // Lines were added
-        part.value.forEach(line => {
+        part.value.forEach((line) => {
           changes.push({
             type: "insert",
-            newLine: line
+            newLine: line,
           });
         });
       } else if (part.removed) {
         // Lines were removed
-        part.value.forEach(line => {
+        part.value.forEach((line) => {
           changes.push({
             type: "delete",
-            oldLine: line
+            oldLine: line,
           });
         });
       } else {
         // Lines are equal
-        part.value.forEach(line => {
+        part.value.forEach((line) => {
           changes.push({
             type: "equal",
             oldLine: line,
-            newLine: line
+            newLine: line,
           });
         });
       }
@@ -468,48 +468,53 @@ class AdminManager {
   // Test function to verify diff functionality
   runDiffTests() {
     console.log("🧪 Running Diff Tests...");
-    
+
     const tests = [
       {
         name: "Single line change",
         old: "Hello world",
-        new: "Hello beautiful world"
+        new: "Hello beautiful world",
       },
       {
         name: "Multiline addition",
         old: "Line 1\nLine 3",
-        new: "Line 1\nLine 2\nLine 3"
+        new: "Line 1\nLine 2\nLine 3",
       },
       {
-        name: "Multiline deletion", 
+        name: "Multiline deletion",
         old: "Line 1\nLine 2\nLine 3",
-        new: "Line 1\nLine 3"
+        new: "Line 1\nLine 3",
       },
       {
         name: "Multiline modification",
         old: "Original line\nSecond line\nThird line",
-        new: "Modified line\nSecond line\nModified third line"
+        new: "Modified line\nSecond line\nModified third line",
       },
       {
         name: "Complex multiline",
         old: "This is a paragraph.\nIt has multiple sentences.\nSome content here.\nFinal line.",
-        new: "This is a modified paragraph.\nIt has multiple sentences.\nSome different content here.\nAdditional content.\nFinal line."
-      }
+        new: "This is a modified paragraph.\nIt has multiple sentences.\nSome different content here.\nAdditional content.\nFinal line.",
+      },
     ];
-    
-    tests.forEach(test => {
+
+    tests.forEach((test) => {
       try {
         const diffSummary = getDiffSummary(test.old, test.new);
         const diffHTML = generateDiffHTML(test.old, test.new);
-        const { alignedOld, alignedNew } = this.alignTextLines(test.old, test.new);
-        
+        const { alignedOld, alignedNew } = this.alignTextLines(
+          test.old,
+          test.new
+        );
+
         console.log(`✅ ${test.name}: ${diffSummary.message}`);
-        console.log(`   Aligned lines: ${alignedOld.length} old, ${alignedNew.length} new`);
+        console.log(
+          `   Aligned lines: ${alignedOld.length} old, ${alignedNew.length} new`
+        );
       } catch (error) {
         console.log(`❌ ${test.name}: ${error.message}`);
       }
     });
-    
+
     console.log("🏁 Diff tests completed");
   }
 

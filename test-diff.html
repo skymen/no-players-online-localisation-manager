@@ -1,277 +1,300 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Diff Module Tests</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #000;
-            color: #fff;
-            padding: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .test-container {
-            background: #232121;
-            border-radius: 8px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        
-        .test-output {
-            background: #000;
-            border: 1px solid #555e54;
-            border-radius: 4px;
-            padding: 1rem;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.9rem;
-            white-space: pre-wrap;
-            overflow-x: auto;
-        }
-        
-        .test-example {
-            margin: 1rem 0;
-            padding: 1rem;
-            background: #000;
-            border-radius: 4px;
-            border: 1px solid #555e54;
-        }
-        
-        .diff-preview {
-            background: #232121;
-            padding: 1rem;
-            border-radius: 4px;
-            margin: 0.5rem 0;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-        
-        .diff-added {
-            background-color: rgba(34, 197, 94, 0.2);
-            color: #22c55e;
-            padding: 0.1rem 0.2rem;
-            border-radius: 2px;
-        }
-        
-        .diff-removed {
-            background-color: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-            padding: 0.1rem 0.2rem;
-            border-radius: 2px;
-            text-decoration: line-through;
-        }
-        
-        .diff-unchanged {
-            color: #fff;
-        }
-        
-        button {
-            background: #555e54;
-            color: #fff;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            margin: 0.5rem;
-        }
-        
-        button:hover {
-            opacity: 0.8;
-        }
-        
-        h1, h2, h3 {
-            color: #55bfd9;
-        }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: #000;
+        color: #fff;
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .test-container {
+        background: #232121;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .test-output {
+        background: #000;
+        border: 1px solid #555e54;
+        border-radius: 4px;
+        padding: 1rem;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 0.9rem;
+        white-space: pre-wrap;
+        overflow-x: auto;
+      }
+
+      .test-example {
+        margin: 1rem 0;
+        padding: 1rem;
+        background: #000;
+        border-radius: 4px;
+        border: 1px solid #555e54;
+      }
+
+      .diff-preview {
+        background: #232121;
+        padding: 1rem;
+        border-radius: 4px;
+        margin: 0.5rem 0;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+
+      .diff-added {
+        background-color: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+        padding: 0.1rem 0.2rem;
+        border-radius: 2px;
+      }
+
+      .diff-removed {
+        background-color: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        padding: 0.1rem 0.2rem;
+        border-radius: 2px;
+        text-decoration: line-through;
+      }
+
+      .diff-unchanged {
+        color: #fff;
+      }
+
+      button {
+        background: #555e54;
+        color: #fff;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        margin: 0.5rem;
+      }
+
+      button:hover {
+        opacity: 0.8;
+      }
+
+      h1,
+      h2,
+      h3 {
+        color: #55bfd9;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>🧪 Diff Module Test Suite</h1>
-    
+
     <div class="test-container">
-        <h2>Automated Tests</h2>
-        <button onclick="runAllTests()">Run All Tests</button>
-        <button onclick="runMultilineTests()">Run Multiline Tests Only</button>
-        <button onclick="clearOutput()">Clear Output</button>
-        
-        <div id="testOutput" class="test-output"></div>
+      <h2>Automated Tests</h2>
+      <button onclick="runAllTests()">Run All Tests</button>
+      <button onclick="runMultilineTests()">Run Multiline Tests Only</button>
+      <button onclick="clearOutput()">Clear Output</button>
+
+      <div id="testOutput" class="test-output"></div>
     </div>
-    
+
     <div class="test-container">
-        <h2>Interactive Test Examples</h2>
-        
-        <div class="test-example">
-            <h3>Single Line Test</h3>
-            <p><strong>Old:</strong> "Hello world"</p>
-            <p><strong>New:</strong> "Hello beautiful world"</p>
-            <button onclick="testSingleLine()">Test Single Line</button>
-            <div id="singleLineResult" class="diff-preview"></div>
-        </div>
-        
-        <div class="test-example">
-            <h3>Simple Multiline Test</h3>
-            <p><strong>Old:</strong></p>
-            <pre>Line 1
+      <h2>Interactive Test Examples</h2>
+
+      <div class="test-example">
+        <h3>Single Line Test</h3>
+        <p><strong>Old:</strong> "Hello world"</p>
+        <p><strong>New:</strong> "Hello beautiful world"</p>
+        <button onclick="testSingleLine()">Test Single Line</button>
+        <div id="singleLineResult" class="diff-preview"></div>
+      </div>
+
+      <div class="test-example">
+        <h3>Simple Multiline Test</h3>
+        <p><strong>Old:</strong></p>
+        <pre>
+Line 1
 Line 2
-Line 3</pre>
-            <p><strong>New:</strong></p>
-            <pre>Line 1
+Line 3</pre
+        >
+        <p><strong>New:</strong></p>
+        <pre>
+Line 1
 Modified Line 2
 Line 3
-New Line 4</pre>
-            <button onclick="testSimpleMultiline()">Test Simple Multiline</button>
-            <div id="simpleMultilineResult" class="diff-preview"></div>
-        </div>
-        
-        <div class="test-example">
-            <h3>Complex Multiline Test</h3>
-            <p><strong>Old:</strong></p>
-            <pre>This is a paragraph.
+New Line 4</pre
+        >
+        <button onclick="testSimpleMultiline()">Test Simple Multiline</button>
+        <div id="simpleMultilineResult" class="diff-preview"></div>
+      </div>
+
+      <div class="test-example">
+        <h3>Complex Multiline Test</h3>
+        <p><strong>Old:</strong></p>
+        <pre>
+This is a paragraph.
 It has multiple sentences.
 Some content here.
-Final line.</pre>
-            <p><strong>New:</strong></p>
-            <pre>This is a modified paragraph.
+Final line.</pre
+        >
+        <p><strong>New:</strong></p>
+        <pre>
+This is a modified paragraph.
 It has multiple sentences.
 Some different content here.
 Additional content.
-Final line.</pre>
-            <button onclick="testComplexMultiline()">Test Complex Multiline</button>
-            <div id="complexMultilineResult" class="diff-preview"></div>
-        </div>
-        
-        <div class="test-example">
-            <h3>Real-world Localization Test</h3>
-            <p><strong>Old:</strong></p>
-            <pre>Welcome to our application!
+Final line.</pre
+        >
+        <button onclick="testComplexMultiline()">Test Complex Multiline</button>
+        <div id="complexMultilineResult" class="diff-preview"></div>
+      </div>
+
+      <div class="test-example">
+        <h3>Real-world Localization Test</h3>
+        <p><strong>Old:</strong></p>
+        <pre>
+Welcome to our application!
 Please click the button below to continue.
-If you need help, contact support.</pre>
-            <p><strong>New:</strong></p>
-            <pre>Welcome to our amazing application!
+If you need help, contact support.</pre
+        >
+        <p><strong>New:</strong></p>
+        <pre>
+Welcome to our amazing application!
 Please click the blue button below to continue.
 If you need help, contact our support team.
-Thank you for using our service!</pre>
-            <button onclick="testLocalization()">Test Localization</button>
-            <div id="localizationResult" class="diff-preview"></div>
-        </div>
+Thank you for using our service!</pre
+        >
+        <button onclick="testLocalization()">Test Localization</button>
+        <div id="localizationResult" class="diff-preview"></div>
+      </div>
     </div>
 
     <!-- Load required libraries -->
     <script src="https://unpkg.com/diff@5.1.0/dist/diff.min.js"></script>
-    
+
     <!-- Load our modules -->
     <script type="module">
-        import { runTests } from './diffTests.js';
-        import { generateDiffHTML, getDiffStats, getDiffSummary } from './diffModule.js';
-        
-        // Make functions available globally
-        window.runAllTests = function() {
-            const output = document.getElementById('testOutput');
-            
-            // Capture console output
-            const originalLog = console.log;
-            let logOutput = '';
-            
-            console.log = function(...args) {
-                logOutput += args.join(' ') + '\n';
-                originalLog.apply(console, args);
-            };
-            
-            try {
-                runTests();
-            } catch (error) {
-                logOutput += 'Error running tests: ' + error.message + '\n';
-            }
-            
-            // Restore console.log
-            console.log = originalLog;
-            
-            output.textContent = logOutput;
+      import { runTests } from "./diffTests.js";
+      import {
+        generateDiffHTML,
+        getDiffStats,
+        getDiffSummary,
+      } from "./diffModule.js";
+
+      // Make functions available globally
+      window.runAllTests = function () {
+        const output = document.getElementById("testOutput");
+
+        // Capture console output
+        const originalLog = console.log;
+        let logOutput = "";
+
+        console.log = function (...args) {
+          logOutput += args.join(" ") + "\n";
+          originalLog.apply(console, args);
         };
-        
-        window.runMultilineTests = function() {
-            const output = document.getElementById('testOutput');
-            output.textContent = 'Running multiline-specific tests...\n\n';
-            
-            // Test various multiline scenarios
-            const tests = [
-                {
-                    name: 'Line Addition',
-                    old: 'Line 1\nLine 3',
-                    new: 'Line 1\nLine 2\nLine 3'
-                },
-                {
-                    name: 'Line Deletion', 
-                    old: 'Line 1\nLine 2\nLine 3',
-                    new: 'Line 1\nLine 3'
-                },
-                {
-                    name: 'Line Modification',
-                    old: 'Original line\nUnchanged line',
-                    new: 'Modified line\nUnchanged line'
-                },
-                {
-                    name: 'Paragraph Changes',
-                    old: 'First paragraph.\n\nSecond paragraph with text.\n\nThird paragraph.',
-                    new: 'First paragraph modified.\n\nSecond paragraph with different text.\n\nNew third paragraph.\n\nFourth paragraph added.'
-                }
-            ];
-            
-            let results = '';
-            for (const test of tests) {
-                try {
-                    const stats = getDiffStats(test.old, test.new);
-                    const summary = getDiffSummary(test.old, test.new);
-                    
-                    results += `${test.name}:\n`;
-                    results += `  Summary: ${summary.message}\n`;
-                    results += `  Stats: +${stats.addedWords} -${stats.removedWords} words\n`;
-                    results += `  Status: ✅ PASS\n\n`;
-                } catch (error) {
-                    results += `${test.name}:\n`;
-                    results += `  Error: ${error.message}\n`;
-                    results += `  Status: ❌ FAIL\n\n`;
-                }
-            }
-            
-            output.textContent += results;
-        };
-        
-        window.clearOutput = function() {
-            document.getElementById('testOutput').textContent = '';
-        };
-        
-        window.testSingleLine = function() {
-            const old = "Hello world";
-            const new_ = "Hello beautiful world";
-            const html = generateDiffHTML(old, new_);
-            document.getElementById('singleLineResult').innerHTML = html;
-        };
-        
-        window.testSimpleMultiline = function() {
-            const old = "Line 1\nLine 2\nLine 3";
-            const new_ = "Line 1\nModified Line 2\nLine 3\nNew Line 4";
-            const html = generateDiffHTML(old, new_);
-            document.getElementById('simpleMultilineResult').innerHTML = html;
-        };
-        
-        window.testComplexMultiline = function() {
-            const old = "This is a paragraph.\nIt has multiple sentences.\nSome content here.\nFinal line.";
-            const new_ = "This is a modified paragraph.\nIt has multiple sentences.\nSome different content here.\nAdditional content.\nFinal line.";
-            const html = generateDiffHTML(old, new_);
-            document.getElementById('complexMultilineResult').innerHTML = html;
-        };
-        
-        window.testLocalization = function() {
-            const old = "Welcome to our application!\nPlease click the button below to continue.\nIf you need help, contact support.";
-            const new_ = "Welcome to our amazing application!\nPlease click the blue button below to continue.\nIf you need help, contact our support team.\nThank you for using our service!";
-            const html = generateDiffHTML(old, new_);
-            document.getElementById('localizationResult').innerHTML = html;
-        };
+
+        try {
+          runTests();
+        } catch (error) {
+          logOutput += "Error running tests: " + error.message + "\n";
+        }
+
+        // Restore console.log
+        console.log = originalLog;
+
+        output.textContent = logOutput;
+      };
+
+      window.runMultilineTests = function () {
+        const output = document.getElementById("testOutput");
+        output.textContent = "Running multiline-specific tests...\n\n";
+
+        // Test various multiline scenarios
+        const tests = [
+          {
+            name: "Line Addition",
+            old: "Line 1\nLine 3",
+            new: "Line 1\nLine 2\nLine 3",
+          },
+          {
+            name: "Line Deletion",
+            old: "Line 1\nLine 2\nLine 3",
+            new: "Line 1\nLine 3",
+          },
+          {
+            name: "Line Modification",
+            old: "Original line\nUnchanged line",
+            new: "Modified line\nUnchanged line",
+          },
+          {
+            name: "Paragraph Changes",
+            old: "First paragraph.\n\nSecond paragraph with text.\n\nThird paragraph.",
+            new: "First paragraph modified.\n\nSecond paragraph with different text.\n\nNew third paragraph.\n\nFourth paragraph added.",
+          },
+        ];
+
+        let results = "";
+        for (const test of tests) {
+          try {
+            const stats = getDiffStats(test.old, test.new);
+            const summary = getDiffSummary(test.old, test.new);
+
+            results += `${test.name}:\n`;
+            results += `  Summary: ${summary.message}\n`;
+            results += `  Stats: +${stats.addedWords} -${stats.removedWords} words\n`;
+            results += `  Status: ✅ PASS\n\n`;
+          } catch (error) {
+            results += `${test.name}:\n`;
+            results += `  Error: ${error.message}\n`;
+            results += `  Status: ❌ FAIL\n\n`;
+          }
+        }
+
+        output.textContent += results;
+      };
+
+      window.clearOutput = function () {
+        document.getElementById("testOutput").textContent = "";
+      };
+
+      window.testSingleLine = function () {
+        const old = "Hello world";
+        const new_ = "Hello beautiful world";
+        const html = generateDiffHTML(old, new_);
+        document.getElementById("singleLineResult").innerHTML = html;
+      };
+
+      window.testSimpleMultiline = function () {
+        const old = "Line 1\nLine 2\nLine 3";
+        const new_ = "Line 1\nModified Line 2\nLine 3\nNew Line 4";
+        const html = generateDiffHTML(old, new_);
+        document.getElementById("simpleMultilineResult").innerHTML = html;
+      };
+
+      window.testComplexMultiline = function () {
+        const old =
+          "This is a paragraph.\nIt has multiple sentences.\nSome content here.\nFinal line.";
+        const new_ =
+          "This is a modified paragraph.\nIt has multiple sentences.\nSome different content here.\nAdditional content.\nFinal line.";
+        const html = generateDiffHTML(old, new_);
+        document.getElementById("complexMultilineResult").innerHTML = html;
+      };
+
+      window.testLocalization = function () {
+        const old =
+          "Welcome to our application!\nPlease click the button below to continue.\nIf you need help, contact support.";
+        const new_ =
+          "Welcome to our amazing application!\nPlease click the blue button below to continue.\nIf you need help, contact our support team.\nThank you for using our service!";
+        const html = generateDiffHTML(old, new_);
+        document.getElementById("localizationResult").innerHTML = html;
+      };
     </script>
-</body>
+  </body>
 </html>
