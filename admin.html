@@ -254,33 +254,34 @@
         display: none;
       }
 
-      /* Diff Styles */
+      /* Simple Diff Styles */
       .diff-container {
-        background: var(--bg-color);
+        background: var(--secondary-bg);
         border: 1px solid var(--accent-color);
-        border-radius: 4px;
-        padding: 1rem;
-        margin: 0.5rem 0;
-        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-        font-size: 0.9rem;
-        line-height: 1.4;
-        white-space: pre-wrap;
-        word-break: break-word;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 12px 0;
+        font-family: "SF Mono", "Monaco", "Menlo", "Consolas", monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        overflow-x: auto;
       }
 
       .diff-added {
-        background-color: rgba(34, 197, 94, 0.2);
-        color: #22c55e;
-        padding: 0.1rem 0.2rem;
-        border-radius: 2px;
+        background: #d1f2d1;
+        color: #0f5132;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-weight: 500;
       }
 
       .diff-removed {
-        background-color: rgba(239, 68, 68, 0.2);
-        color: #ef4444;
-        padding: 0.1rem 0.2rem;
-        border-radius: 2px;
+        background: #f8d7da;
+        color: #842029;
+        padding: 2px 4px;
+        border-radius: 3px;
         text-decoration: line-through;
+        font-weight: 500;
       }
 
       .diff-unchanged {
@@ -288,150 +289,158 @@
       }
 
       .diff-header {
-        font-weight: bold;
-        color: var(--link-color);
-        margin-bottom: 0.5rem;
-        font-size: 0.9rem;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-      }
-
-      .diff-toggle-btn {
-        background: var(--accent-color);
-        color: var(--text-color);
-        border: none;
-        padding: 0.3rem 0.6rem;
-        border-radius: 3px;
-        cursor: pointer;
-        font-size: 0.8rem;
-        transition: opacity 0.2s ease;
-      }
-
-      .diff-toggle-btn:hover {
-        opacity: 0.8;
-      }
-
-      .split-view-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-      }
-
-      .split-section {
-        border: 1px solid var(--accent-color);
-        border-radius: 4px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .split-header {
-        padding: 0.5rem;
-        font-weight: bold;
-        font-size: 0.8rem;
+        gap: 12px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
         border-bottom: 1px solid var(--accent-color);
       }
 
-      .old-header {
-        background: rgba(239, 68, 68, 0.1);
-        color: #ef4444;
-      }
-
-      .new-header {
-        background: rgba(34, 197, 94, 0.1);
-        color: #22c55e;
-      }
-
-      .split-content-wrapper {
-        display: flex;
-        flex: 1;
-        overflow: hidden;
-      }
-
-      .line-numbers {
-        width: 40px;
-        background: var(--secondary-bg);
-        border-right: 1px solid var(--accent-color);
-        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-        font-size: 0.8rem;
-        line-height: 1.4;
-        overflow: hidden;
-        user-select: none;
-      }
-
-      .line-number {
-        padding: 0 0.3rem;
-        text-align: right;
+      .diff-label {
+        font-weight: 600;
         color: var(--link-color);
-        opacity: 0.7;
-        height: 1.4em;
-        border-bottom: 1px solid transparent;
+        font-size: 14px;
       }
 
-      .empty-line-number {
-        opacity: 0.3;
-        color: var(--accent-color);
+      .diff-mode-controls {
+        display: flex;
+        gap: 8px;
       }
 
-      .split-content {
-        flex: 1;
-        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-        font-size: 0.9rem;
-        line-height: 1.4;
-        max-height: 300px;
-        overflow-y: auto;
-        overflow-x: auto;
+      .copy-buttons {
+        display: flex;
+        gap: 8px;
+        margin-left: auto;
       }
 
-      .content-line {
-        padding: 0 0.5rem;
-        min-height: 1.4em;
-        border-bottom: 1px solid transparent;
-        white-space: pre-wrap;
-        word-break: break-word;
+      .copy-btn {
+        padding: 6px 12px;
+        background: var(--secondary-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 6px;
+        color: var(--text-color);
+        cursor: pointer;
+        font-size: 12px;
+        font-family: var(--font-stack);
+        transition: all 0.2s ease;
       }
 
-      .normal-line {
-        background: transparent;
+      .copy-btn:hover {
+        background: var(--accent-color);
+        transform: translateY(-1px);
       }
 
-      .empty-line {
-        background: rgba(128, 128, 128, 0.1);
-        color: var(--accent-color);
-        opacity: 0.5;
-        font-style: italic;
+      .copy-btn:active {
+        transform: translateY(0);
       }
 
-      .deleted-line {
-        background: rgba(239, 68, 68, 0.1);
-        border-left: 3px solid #ef4444;
+      .diff-mode-btn {
+        background: var(--bg-color);
+        color: var(--text-color);
+        border: 1px solid var(--accent-color);
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        transition: all 0.2s ease;
       }
 
-      .added-line {
-        background: rgba(34, 197, 94, 0.1);
-        border-left: 3px solid #22c55e;
+      .diff-mode-btn:hover {
+        background: var(--accent-color);
+        transform: translateY(-1px);
       }
 
-      .diff-summary {
-        font-size: 0.8rem;
-        opacity: 0.8;
-        margin-bottom: 0.5rem;
+      .diff-mode-btn.active {
+        background: var(--link-color);
+        color: var(--bg-color);
+        border-color: var(--link-color);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
 
-      .term-diff-item {
-        margin-bottom: 1.5rem;
-        padding: 1rem;
+      .char-diff-container {
         background: var(--bg-color);
         border: 1px solid var(--accent-color);
         border-radius: 6px;
+        padding: 12px;
+        margin-top: 8px;
+      }
+
+      .char-diff-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--link-color);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .char-diff-content {
+        font-family: "SF Mono", "Monaco", "Menlo", "Consolas", monospace;
+        font-size: 13px;
+        line-height: 1.4;
+        word-break: break-all;
+      }
+
+      .char-added {
+        background: #d1f2d1;
+        color: #0f5132;
+        padding: 1px 3px;
+        border-radius: 2px;
+        font-weight: 500;
+      }
+
+      .char-removed {
+        background: #f8d7da;
+        color: #842029;
+        padding: 1px 3px;
+        border-radius: 2px;
+        font-weight: 500;
+      }
+
+      .enhanced-diff-line {
+        margin: 8px 0;
+        padding: 8px;
+        background: var(--bg-color);
+        border-radius: 4px;
+        border-left: 3px solid var(--link-color);
+      }
+
+      .line-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--link-color);
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .diff-summary {
+        font-size: 13px;
+        color: var(--text-color);
+        opacity: 0.8;
+        margin-bottom: 8px;
+        font-style: italic;
+      }
+
+      .term-diff-item {
+        background: var(--bg-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       }
 
       .term-diff-title {
-        font-weight: bold;
+        font-weight: 600;
         color: var(--link-color);
-        margin-bottom: 0.75rem;
-        font-size: 1rem;
+        margin-bottom: 12px;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
     </style>
   </head>
@@ -530,51 +539,75 @@
     <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/diff@5.1.0/dist/diff.min.js"></script>
     <script>
-      // Global function for toggling between diff view and split view
-      window.toggleDiffView = function (index) {
-        const diffView = document.getElementById(`diffView${index}`);
-        const splitView = document.getElementById(`splitView${index}`);
-        const toggleBtn = document.getElementById(`toggleBtn${index}`);
+      // Global function for switching between diff modes
+      window.showDiffMode = function (index, mode) {
+        // Get all mode buttons
+        const standardBtn = document.getElementById(`standardBtn${index}`);
+        const enhancedBtn = document.getElementById(`enhancedBtn${index}`);
+        const characterBtn = document.getElementById(`characterBtn${index}`);
 
-        if (diffView && splitView && toggleBtn) {
-          const isShowingDiff = !diffView.classList.contains("hidden");
+        // Get all content divs
+        const standardDiv = document.getElementById(`standardDiff${index}`);
+        const enhancedDiv = document.getElementById(`enhancedDiff${index}`);
+        const characterDiv = document.getElementById(`characterDiff${index}`);
 
-          if (isShowingDiff) {
-            // Switch to split view
-            diffView.classList.add("hidden");
-            splitView.classList.remove("hidden");
-            toggleBtn.textContent = "🔄 Diff View";
-          } else {
-            // Switch to diff view
-            splitView.classList.add("hidden");
-            diffView.classList.remove("hidden");
-            toggleBtn.textContent = "📋 Split View";
-          }
+        // Remove active class from all buttons
+        [standardBtn, enhancedBtn, characterBtn].forEach((btn) => {
+          if (btn) btn.classList.remove("active");
+        });
+
+        // Hide all content divs
+        [standardDiv, enhancedDiv, characterDiv].forEach((content) => {
+          if (content) content.style.display = "none";
+        });
+
+        // Activate the selected mode
+        if (mode === "standard" && standardBtn && standardDiv) {
+          standardBtn.classList.add("active");
+          standardDiv.style.display = "block";
+        } else if (mode === "enhanced" && enhancedBtn && enhancedDiv) {
+          enhancedBtn.classList.add("active");
+          enhancedDiv.style.display = "block";
+        } else if (mode === "character" && characterBtn && characterDiv) {
+          characterBtn.classList.add("active");
+          characterDiv.style.display = "block";
         }
       };
 
-      // Global function for synchronized scrolling
-      window.syncScroll = function (index, source) {
-        const oldContent = document.getElementById(`oldContent${index}`);
-        const newContent = document.getElementById(`newContent${index}`);
+      // Global function for copying text to clipboard
+      window.copyToClipboard = async function (text, type) {
+        try {
+          await navigator.clipboard.writeText(text);
+          // Show a brief success message
+          const btn = event.target;
+          const originalText = btn.textContent;
+          btn.textContent = type === "old" ? "✅ Copied Old" : "✅ Copied New";
+          btn.style.backgroundColor = "#d4edda";
 
-        if (oldContent && newContent) {
-          const sourceElement = source === "old" ? oldContent : newContent;
-          const targetElement = source === "old" ? newContent : oldContent;
-
-          // Temporarily remove the scroll listener to avoid infinite loop
-          targetElement.onscroll = null;
-
-          // Sync scroll position
-          targetElement.scrollTop = sourceElement.scrollTop;
-          targetElement.scrollLeft = sourceElement.scrollLeft;
-
-          // Restore the scroll listener after a brief delay
           setTimeout(() => {
-            targetElement.onscroll = function () {
-              syncScroll(index, source === "old" ? "new" : "old");
-            };
-          }, 10);
+            btn.textContent = originalText;
+            btn.style.backgroundColor = "";
+          }, 1500);
+        } catch (err) {
+          console.error("Failed to copy text: ", err);
+          // Fallback for older browsers
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          document.body.appendChild(textArea);
+          textArea.select();
+          try {
+            document.execCommand("copy");
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent =
+              type === "old" ? "✅ Copied Old" : "✅ Copied New";
+            setTimeout(() => {
+              btn.textContent = originalText;
+            }, 1500);
+          } catch (fallbackErr) {
+            console.error("Fallback copy failed: ", fallbackErr);
+          }
+          document.body.removeChild(textArea);
         }
       };
     </script>

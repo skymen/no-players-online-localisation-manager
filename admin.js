@@ -291,12 +291,41 @@ class AdminManager {
     return modifiedTerms
       .map((item, index) => {
         const diffSummary = getDiffSummary(item.oldText, item.newText);
-        const diffHTML = generateDiffHTML(item.oldText, item.newText);
-        const splitViewHTML = this.generateSplitViewHTML(
-          item.oldText,
-          item.newText,
-          index
-        );
+
+        // Check if this is multiline
+        const isMultiline =
+          (item.oldText && item.oldText.includes("\n")) ||
+          (item.newText && item.newText.includes("\n"));
+
+        let diffContent = "";
+
+        if (isMultiline) {
+          // For multiline: Use enhanced diff
+          const enhancedDiff = generateEnhancedLineDiff(
+            item.oldText,
+            item.newText
+          );
+          const enhancedHTML = this.generateEnhancedDiffHTML(enhancedDiff);
+
+          diffContent = `
+            <div class="diff-container">
+              ${enhancedHTML}
+            </div>
+          `;
+        } else {
+          // For single-line: Use character diff
+          const charDiff = generateCharDiff(
+            item.oldText || "",
+            item.newText || ""
+          );
+          const charDiffHTML = this.generateCharDiffHTML(charDiff);
+
+          diffContent = `
+            <div class="diff-container">
+              ${charDiffHTML}
+            </div>
+          `;
+        }
 
         return `
           <div class="term-diff-item">
@@ -307,162 +336,97 @@ class AdminManager {
               ${diffSummary.message}
             </div>
             <div class="diff-header">
-              Text Changes:
-              <button class="diff-toggle-btn" onclick="toggleDiffView(${index})" id="toggleBtn${index}">
-                📋 Split View
-              </button>
+              <span class="diff-label">Text Changes</span>
+              <div class="copy-buttons">
+                <button class="copy-btn" onclick="copyToClipboard('${this.escapeForAttribute(
+                  item.oldText || ""
+                )}', 'old')" title="Copy original text">
+                  📋 Copy Old
+                </button>
+                <button class="copy-btn" onclick="copyToClipboard('${this.escapeForAttribute(
+                  item.newText || ""
+                )}', 'new')" title="Copy new text">
+                  📋 Copy New
+                </button>
+              </div>
             </div>
-            <div class="diff-container diff-view" id="diffView${index}">
-              ${diffHTML}
-            </div>
-            <div class="diff-container split-view hidden" id="splitView${index}">
-              ${splitViewHTML}
-            </div>
+            ${diffContent}
           </div>
         `;
       })
       .join("");
   }
 
-  generateSplitViewHTML(oldText, newText, index) {
-    const { alignedOld, alignedNew, maxLines } = this.alignTextLines(
-      oldText || "",
-      newText || ""
-    );
+  generateEnhancedDiffHTML(enhancedDiff) {
+    return enhancedDiff
+      .map((part) => {
+        if (part.lineType === "modified" && part.charDiff) {
+          const charDiffHtml = part.charDiff
+            .map((charPart) => {
+              const className = charPart.added
+                ? "diff-added char-added"
+                : charPart.removed
+                ? "diff-removed char-removed"
+                : "diff-unchanged";
+              const escapedValue = this.escapeHtml(charPart.value);
+              return `<span class="${className}">${escapedValue}</span>`;
+            })
+            .join("");
 
-    return `
-      <div class="split-view-container">
-        <div class="split-section">
-          <div class="split-header old-header">📄 Original</div>
-          <div class="split-content-wrapper">
-            <div class="line-numbers" id="oldLineNumbers${index}">
-              ${this.generateLineNumbers(alignedOld, "old")}
-            </div>
-            <div class="split-content old-content" id="oldContent${index}" onscroll="syncScroll(${index}, 'old')">
-              ${this.generateAlignedContent(alignedOld, "old")}
-            </div>
+          return `
+          <div class="enhanced-diff-line modified-line">
+            <div class="line-label">Modified Line (Character-level changes):</div>
+            <div class="char-diff-content">${charDiffHtml}</div>
           </div>
-        </div>
-        <div class="split-section">
-          <div class="split-header new-header">📝 New</div>
-          <div class="split-content-wrapper">
-            <div class="line-numbers" id="newLineNumbers${index}">
-              ${this.generateLineNumbers(alignedNew, "new")}
-            </div>
-            <div class="split-content new-content" id="newContent${index}" onscroll="syncScroll(${index}, 'new')">
-              ${this.generateAlignedContent(alignedNew, "new")}
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  alignTextLines(oldText, newText) {
-    const oldLines = oldText.split("\n");
-    const newLines = newText.split("\n");
-
-    // Use simple line diff to find insertions and deletions
-    const lineDiff = this.getLineDiff(oldLines, newLines);
-
-    const alignedOld = [];
-    const alignedNew = [];
-
-    lineDiff.forEach((change) => {
-      if (change.type === "equal") {
-        alignedOld.push({ line: change.oldLine, type: "normal" });
-        alignedNew.push({ line: change.newLine, type: "normal" });
-      } else if (change.type === "delete") {
-        alignedOld.push({ line: change.oldLine, type: "deleted" });
-        alignedNew.push({ line: "", type: "empty" });
-      } else if (change.type === "insert") {
-        alignedOld.push({ line: "", type: "empty" });
-        alignedNew.push({ line: change.newLine, type: "added" });
-      }
-    });
-
-    return {
-      alignedOld,
-      alignedNew,
-      maxLines: Math.max(alignedOld.length, alignedNew.length),
-    };
-  }
-
-  getLineDiff(oldLines, newLines) {
-    // Use the diff library for better line-by-line comparison
-    const lineDiff = Diff.diffArrays(oldLines, newLines);
-    const changes = [];
-
-    lineDiff.forEach((part) => {
-      if (part.added) {
-        // Lines were added
-        part.value.forEach((line) => {
-          changes.push({
-            type: "insert",
-            newLine: line,
-          });
-        });
-      } else if (part.removed) {
-        // Lines were removed
-        part.value.forEach((line) => {
-          changes.push({
-            type: "delete",
-            oldLine: line,
-          });
-        });
-      } else {
-        // Lines are equal
-        part.value.forEach((line) => {
-          changes.push({
-            type: "equal",
-            oldLine: line,
-            newLine: line,
-          });
-        });
-      }
-    });
-
-    return changes;
-  }
-
-  generateLineNumbers(alignedLines, side) {
-    let lineNumber = 1;
-    return alignedLines
-      .map((item) => {
-        if (item.type === "empty") {
-          return '<div class="line-number empty-line-number">—</div>';
+        `;
         } else {
-          const num = lineNumber++;
-          return `<div class="line-number">${num}</div>`;
+          const className = part.added
+            ? "diff-added"
+            : part.removed
+            ? "diff-removed"
+            : "diff-unchanged";
+          const escapedValue = this.escapeHtml(part.value || "");
+          return `<span class="${className}">${escapedValue}</span>`;
         }
       })
       .join("");
   }
 
-  generateAlignedContent(alignedLines, side) {
-    return alignedLines
-      .map((item) => {
-        const escapedLine = this.escapeHtml(item.line);
-        const className =
-          item.type === "empty"
-            ? "empty-line"
-            : item.type === "deleted"
-            ? "deleted-line"
-            : item.type === "added"
-            ? "added-line"
-            : "normal-line";
-
-        return `<div class="content-line ${className}">${
-          escapedLine || "&nbsp;"
-        }</div>`;
-      })
-      .join("");
+  generateCharDiffHTML(charDiff) {
+    return `
+      <div class="char-diff-container">
+        <div class="char-diff-label">Character-level diff:</div>
+        <div class="char-diff-content">
+          ${charDiff
+            .map((part) => {
+              const className = part.added
+                ? "diff-added char-added"
+                : part.removed
+                ? "diff-removed char-removed"
+                : "diff-unchanged";
+              const escapedValue = this.escapeHtml(part.value);
+              return `<span class="${className}">${escapedValue}</span>`;
+            })
+            .join("")}
+        </div>
+      </div>
+    `;
   }
 
   escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text;
-    return div.innerHTML;
+    // Convert newlines to <br> tags to preserve line breaks
+    return div.innerHTML.replace(/\n/g, "<br>");
+  }
+
+  escapeForAttribute(text) {
+    return text
+      .replace(/'/g, "&#39;")
+      .replace(/"/g, "&quot;")
+      .replace(/\\/g, "\\\\")
+      .replace(/\n/g, "\\n")
+      .replace(/\r/g, "\\r");
   }
 
   // Test function to verify diff functionality
@@ -501,15 +465,8 @@ class AdminManager {
       try {
         const diffSummary = getDiffSummary(test.old, test.new);
         const diffHTML = generateDiffHTML(test.old, test.new);
-        const { alignedOld, alignedNew } = this.alignTextLines(
-          test.old,
-          test.new
-        );
 
         console.log(`✅ ${test.name}: ${diffSummary.message}`);
-        console.log(
-          `   Aligned lines: ${alignedOld.length} old, ${alignedNew.length} new`
-        );
       } catch (error) {
         console.log(`❌ ${test.name}: ${error.message}`);
       }
