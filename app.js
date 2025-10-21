@@ -317,6 +317,28 @@ class LocalisationManager {
   displayReport(report) {
     const reportContent = document.getElementById("reportContent");
 
+    // Check if no updates or translations are needed
+    if (report.totalNeedsTranslation === 0 && report.totalNeedsUpdate === 0) {
+      const html = `
+        <div class="report">
+          <h4>🎉 Translation Complete for ${this.selectedLanguage}!</h4>
+          <p style="color: var(--link-color); font-size: 1.1rem; margin-bottom: 1rem;">
+            <strong>Excellent work!</strong> All translations are up to date.
+          </p>
+          <p>Your translation file is complete and ready for use. Please download the final file and send it to the development team.</p>
+          <p style="margin-top: 1rem; padding: 1rem; background: var(--secondary-bg); border-radius: 4px; border-left: 4px solid var(--link-color);">
+            📧 <strong>Next step:</strong> Download the file below and send it to the project maintainer.
+          </p>
+        </div>
+      `;
+      reportContent.innerHTML = html;
+      document
+        .getElementById("downloadProcessedBtn")
+        .classList.remove("hidden");
+      return;
+    }
+
+    // Regular report when translations/updates are needed
     const html = `
       <div class="report">
         <h4>Translation Report for ${this.selectedLanguage}</h4>
