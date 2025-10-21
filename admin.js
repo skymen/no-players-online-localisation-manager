@@ -182,17 +182,29 @@ class AdminManager {
   compareBaseFiles(uploadedData) {
     const originalMap = {};
     const uploadedMap = {};
+    const originalRawMap = {}; // Store raw text for diff display
+    const uploadedRawMap = {}; // Store raw text for diff display
+
+    // Helper function to normalize text for comparison
+    const normalizeText = (text) => {
+      if (!text) return "";
+      return text
+        .replace(/\r\n/g, "\n") // Normalize Windows line endings
+        .replace(/\r/g, "\n"); // Normalize old Mac line endings
+    };
 
     // Create maps for easy comparison
     this.originalData.forEach((row) => {
       if (row.termID) {
-        originalMap[row.termID] = row.English || "";
+        originalRawMap[row.termID] = row.English || "";
+        originalMap[row.termID] = normalizeText(row.English || "");
       }
     });
 
     uploadedData.forEach((row) => {
       if (row.termID) {
-        uploadedMap[row.termID] = row.English || "";
+        uploadedRawMap[row.termID] = row.English || "";
+        uploadedMap[row.termID] = normalizeText(row.English || "");
       }
     });
 
@@ -205,10 +217,18 @@ class AdminManager {
       if (!originalMap.hasOwnProperty(termID)) {
         added.push(termID);
       } else if (originalMap[termID] !== uploadedMap[termID]) {
+        // Debug logging for suspected false positives
+        console.log(`Detected change in ${termID}:`);
+        console.log(`Original (normalized): "${originalMap[termID]}"`);
+        console.log(`Uploaded (normalized): "${uploadedMap[termID]}"`);
+        console.log(`Original (raw): "${originalRawMap[termID]}"`);
+        console.log(`Uploaded (raw): "${uploadedRawMap[termID]}"`);
+
+        // Use raw text for diff display, but normalized text was used for comparison
         modified.push({
           termID,
-          oldText: originalMap[termID],
-          newText: uploadedMap[termID],
+          oldText: originalRawMap[termID],
+          newText: uploadedRawMap[termID],
         });
       }
     });
