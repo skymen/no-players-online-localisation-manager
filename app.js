@@ -267,29 +267,31 @@ class LocalisationManager {
         const userEnglish = userRow.English || "";
         const userLanguageText = userRow[userLang] || "";
 
-        if (userEnglish !== latestEnglish) {
-          // English changed, translation needs update
-          if (userLanguageText) {
+        // If user has provided a translation, shouldBeTranslated = FALSE
+        if (userLanguageText) {
+          shouldBeTranslated = "FALSE";
+          languageText = userLanguageText;
+
+          // Check if translation needs update (English changed)
+          if (userEnglish !== latestEnglish) {
             translationNeedsToBeUpdated = "TRUE";
             needsUpdate.push(termID);
-            languageText = userLanguageText; // Keep their translation but mark for update
           } else {
-            needsTranslation.push(termID);
-            languageText = ""; // No translation to keep
+            translationNeedsToBeUpdated = "FALSE";
           }
         } else {
-          // English same, keep their translation
-          languageText = userLanguageText;
-          if (!userLanguageText) {
-            needsTranslation.push(termID);
-          }
+          // User didn't provide translation, needs translation
+          shouldBeTranslated = "TRUE";
+          translationNeedsToBeUpdated = "FALSE";
+          needsTranslation.push(termID);
+          languageText = ""; // No translation from user
         }
       } else {
-        // termID doesn't exist in user file
-        if (!latestLanguageText) {
-          needsTranslation.push(termID);
-          languageText = "";
-        }
+        // termID doesn't exist in user file, needs translation
+        shouldBeTranslated = "TRUE";
+        translationNeedsToBeUpdated = "FALSE";
+        needsTranslation.push(termID);
+        languageText = "";
       }
 
       processedRows.push({
@@ -331,7 +333,9 @@ class LocalisationManager {
               Show terms needing translation (${report.totalNeedsTranslation})
             </button>
             <div class="spoiler-content">
-              ${report.needsTranslation.join("\n")}
+              ${report.needsTranslation
+                .map((term) => `<div>${term}</div>`)
+                .join("")}
             </div>
           </div>
         `
@@ -346,7 +350,7 @@ class LocalisationManager {
               Show terms needing updates (${report.totalNeedsUpdate})
             </button>
             <div class="spoiler-content">
-              ${report.needsUpdate.join("\n")}
+              ${report.needsUpdate.map((term) => `<div>${term}</div>`).join("")}
             </div>
           </div>
         `
