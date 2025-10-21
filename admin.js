@@ -40,6 +40,9 @@ class AdminManager {
     document
       .getElementById("downloadUpdatedBtn")
       .addEventListener("click", () => this.downloadUpdatedFile());
+    document
+      .getElementById("processLanguageFilesBtn")
+      .addEventListener("click", () => this.processLanguageFiles());
   }
 
   setupBeforeUnloadWarning() {
@@ -303,6 +306,14 @@ class AdminManager {
     changesContent.innerHTML = html;
     document.getElementById("changesSection").classList.remove("hidden");
 
+    // Auto-scroll to the changes section
+    setTimeout(() => {
+      document.getElementById("changesSection").scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+
     // Store changes for later application
     this.pendingChanges = changes;
   }
@@ -515,11 +526,7 @@ class AdminManager {
 
         // If English was modified, mark translations as needing update
         if (modified.some((m) => m.termID === originalRow.termID)) {
-          this.languages.forEach((lang) => {
-            if (originalRow[lang] && originalRow[lang].trim() !== "") {
-              updatedRow.translationNeedsToBeUpdated = "TRUE";
-            }
-          });
+          updatedRow.translationNeedsToBeUpdated = "TRUE";
         }
 
         newData.push(updatedRow);
@@ -570,6 +577,191 @@ class AdminManager {
     this.pendingChanges = null;
     document.getElementById("changesSection").classList.add("hidden");
     document.getElementById("baseFileInput").value = "";
+  }
+
+  async processLanguageFiles() {
+    const fileInput = document.getElementById("languageFilesInput");
+    const files = Array.from(fileInput.files);
+
+    if (!files.length) {
+      alert("Please select at least one CSV file");
+      return;
+    }
+
+    this.showStatus("Processing language files...");
+
+    const results = [];
+    const processedLanguages = new Set();
+
+    for (const file of files) {
+      if (!file.name.toLowerCase().endsWith(".csv")) {
+        results.push({
+          filename: file.name,
+          status: "error",
+          message: "Not a CSV file",
+        });
+        continue;
+      }
+
+      try {
+        const csvText = await this.readFileAsText(file);
+        const fileData = parseCSV(csvText);
+        const validation = this.validateLanguageFile(fileData, file.name);
+
+        if (!validation.isValid) {
+          results.push({
+            filename: file.name,
+            status: "error",
+            message: validation.error,
+          });
+          continue;
+        }
+
+        const language = validation.language;
+
+        if (processedLanguages.has(language)) {
+          results.push({
+            filename: file.name,
+            status: "error",
+            message: `Duplicate file for language '${language}'. Only one file per language is allowed.`,
+          });
+          continue;
+        }
+
+        processedLanguages.add(language);
+
+        const mergeResult = this.mergeLanguageData(fileData, language);
+        results.push({
+          filename: file.name,
+          status: "success",
+          message: `Successfully processed ${mergeResult.updatedCount} translations for ${language}`,
+          language: language,
+          stats: mergeResult,
+        });
+      } catch (error) {
+        results.push({
+          filename: file.name,
+          status: "error",
+          message: `Error processing file: ${error.message}`,
+        });
+      }
+    }
+
+    this.displayLanguageFileResults(results);
+    this.hideStatus();
+
+    if (results.some((r) => r.status === "success")) {
+      this.hasUnsavedChanges = true;
+      this.showUnsavedChanges();
+      this.displayDataOverview(); // Refresh the overview
+    }
+  }
+
+  validateLanguageFile(fileData, filename) {
+    // Check if file has data
+    if (!fileData || fileData.length === 0) {
+      return { isValid: false, error: "File is empty or invalid" };
+    }
+
+    // Extract languages from the file
+    const fileLanguages = extractLanguages(fileData);
+
+    // Should have English plus exactly one other language
+    const nonEnglishLanguages = fileLanguages.filter(
+      (lang) => lang !== "English"
+    );
+
+    if (nonEnglishLanguages.length === 0) {
+      return { isValid: false, error: "No non-English language found in file" };
+    }
+
+    if (nonEnglishLanguages.length > 1) {
+      return {
+        isValid: false,
+        error: `Multiple languages found: ${nonEnglishLanguages.join(
+          ", "
+        )}. Each file should contain only one language.`,
+      };
+    }
+
+    const language = nonEnglishLanguages[0];
+
+    // Check if this language exists in our main data
+    if (!this.languages.includes(language)) {
+      return {
+        isValid: false,
+        error: `Language '${language}' not found in main data. Please add it first.`,
+      };
+    }
+
+    return { isValid: true, language: language };
+  }
+
+  mergeLanguageData(fileData, language) {
+    let updatedCount = 0;
+    let newTermsCount = 0;
+    let skippedCount = 0;
+
+    // Create a map of file data for quick lookup
+    const fileDataMap = {};
+    fileData.forEach((row) => {
+      if (row.termID && row[language] && row[language].trim() !== "") {
+        fileDataMap[row.termID] = row[language].trim();
+      }
+    });
+
+    // Update main data
+    this.modifiedData.forEach((row) => {
+      if (row.termID && fileDataMap.hasOwnProperty(row.termID)) {
+        const newTranslation = fileDataMap[row.termID];
+        const existingTranslation = row[language] || "";
+
+        if (existingTranslation.trim() !== newTranslation) {
+          row[language] = newTranslation;
+          updatedCount++;
+        } else {
+          skippedCount++;
+        }
+      }
+    });
+
+    return { updatedCount, newTermsCount, skippedCount };
+  }
+
+  displayLanguageFileResults(results) {
+    const statusDiv = document.getElementById("languageFilesStatus");
+    const resultsDiv = document.getElementById("languageFilesResults");
+
+    let html = "";
+    results.forEach((result) => {
+      html += `
+        <div class="language-file-result ${result.status}">
+          <div class="language-file-name">📄 ${result.filename}</div>
+          <div class="language-file-message">${result.message}</div>
+          ${
+            result.stats
+              ? `
+            <div class="language-file-stats">
+              Updated: ${result.stats.updatedCount} translations, 
+              Skipped: ${result.stats.skippedCount} unchanged
+            </div>
+          `
+              : ""
+          }
+        </div>
+      `;
+    });
+
+    resultsDiv.innerHTML = html;
+    statusDiv.classList.remove("hidden");
+
+    // Auto-scroll to results
+    setTimeout(() => {
+      statusDiv.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
   }
 
   downloadUpdatedFile() {

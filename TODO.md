@@ -1,1 +1,5 @@
 - Update wording so it looks less AI generated
+- remove add language button
+- shouldBeTranslated is actually just wether the key should be translated and shouldnt be touched
+- when merging languages if term doesnt exist or value is empty, keep whats already in there
+- Add a link to original sheet, and have a little tutorial on how to use the system

@@ -442,6 +442,40 @@
         align-items: center;
         gap: 8px;
       }
+
+      .language-file-result {
+        background: var(--bg-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .language-file-result.success {
+        border-color: #28a745;
+        background: rgba(40, 167, 69, 0.1);
+      }
+
+      .language-file-result.error {
+        border-color: #dc3545;
+        background: rgba(220, 53, 69, 0.1);
+      }
+
+      .language-file-result.warning {
+        border-color: #ffc107;
+        background: rgba(255, 193, 7, 0.1);
+      }
+
+      .language-file-name {
+        font-weight: bold;
+        color: var(--link-color);
+        margin-bottom: 0.5rem;
+      }
+
+      .language-file-stats {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
     </style>
   </head>
   <body>
@@ -515,6 +549,29 @@
           <button class="btn btn-primary" id="processBaseFileBtn">
             Process File
           </button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Upload Language Translation Files</h3>
+        <p>
+          Upload multiple language files (exported from the main localisation
+          page) to update translations.
+        </p>
+
+        <div class="file-upload">
+          <div class="form-group">
+            <label for="languageFilesInput">Select language files (CSV):</label>
+            <input type="file" id="languageFilesInput" accept=".csv" multiple />
+          </div>
+          <button class="btn btn-primary" id="processLanguageFilesBtn">
+            Process Language Files
+          </button>
+        </div>
+
+        <div id="languageFilesStatus" class="hidden">
+          <h4>File Processing Status:</h4>
+          <div id="languageFilesResults"></div>
         </div>
       </div>
 
