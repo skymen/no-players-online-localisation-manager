@@ -5,14 +5,16 @@ import { parseCSV, setPapaParseInstance } from "./csvParser.js";
 let papaInitialized = false;
 
 async function initializePapa() {
-  if (typeof window === 'undefined' && !papaInitialized) {
+  if (typeof window === "undefined" && !papaInitialized) {
     try {
-      const Papa = (await import('papaparse')).default;
+      const Papa = (await import("papaparse")).default;
       setPapaParseInstance(Papa);
       papaInitialized = true;
     } catch (error) {
-      console.error('Failed to import Papa Parse:', error);
-      throw new Error('Papa Parse is required. Install with: npm install papaparse');
+      console.error("Failed to import Papa Parse:", error);
+      throw new Error(
+        "Papa Parse is required. Install with: npm install papaparse"
+      );
     }
   }
 }
@@ -21,7 +23,7 @@ export async function fetchGoogleSheetsData(url = CONFIG.GOOGLE_SHEETS_URL) {
   try {
     // Ensure Papa Parse is initialized
     await initializePapa();
-    
+
     console.log("Fetching data from:", url);
 
     const response = await fetch(url);

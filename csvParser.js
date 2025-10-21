@@ -1,7 +1,7 @@
 /**
  * CSV Parser Module using Papa Parse
  * Centralized CSV parsing functionality for the localization system
- * 
+ *
  * For browser usage: Include Papa Parse script tag before this module
  * For Node.js usage: Import Papa Parse and set it on this module
  */
@@ -10,7 +10,7 @@
 let Papa = null;
 
 // For browser environment, try to get Papa from global scope
-if (typeof window !== 'undefined' && window.Papa) {
+if (typeof window !== "undefined" && window.Papa) {
   Papa = window.Papa;
 }
 
@@ -21,17 +21,21 @@ export function setPapaParseInstance(papaInstance) {
 
 function getPapa() {
   if (!Papa) {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       // Browser environment - try to get Papa from window again
       if (window.Papa) {
         Papa = window.Papa;
         return Papa;
       } else {
-        throw new Error('Papa Parse not found on window object. Please ensure Papa Parse script is loaded before this module.');
+        throw new Error(
+          "Papa Parse not found on window object. Please ensure Papa Parse script is loaded before this module."
+        );
       }
     } else {
-      // Node.js environment  
-      throw new Error('Papa Parse not initialized. Import Papa Parse and call setPapaParseInstance(Papa) before using this module.');
+      // Node.js environment
+      throw new Error(
+        "Papa Parse not initialized. Import Papa Parse and call setPapaParseInstance(Papa) before using this module."
+      );
     }
   }
   return Papa;
