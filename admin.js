@@ -220,8 +220,10 @@ class AdminManager {
         // Use raw text for diff display, but normalized text was used for comparison
         modified.push({
           termID,
-          oldText: originalRawMap[termID],
-          newText: uploadedRawMap[termID],
+          oldText: originalMap[termID],
+          newText: uploadedMap[termID],
+          oldTextRaw: originalRawMap[termID],
+          newTextRaw: uploadedRawMap[termID],
         });
       }
     });
@@ -311,9 +313,9 @@ class AdminManager {
         const diffSummary = getDiffSummary(item.oldText, item.newText);
 
         // Check if this is multiline
-        const isMultiline =
-          (item.oldText && item.oldText.includes("\n")) ||
-          (item.newText && item.newText.includes("\n"));
+        const isMultiline = true;
+        // (item.oldText && item.oldText.includes("\n")) ||
+        // (item.newText && item.newText.includes("\n"));
 
         let diffContent = "";
 
@@ -391,7 +393,7 @@ class AdminManager {
             })
             .join("");
 
-          return `<div><strong>Modified line with character-level diff:</strong><br>${charDiffHtml}</div>`;
+          return `<div>${charDiffHtml}</div>`;
         } else {
           const className = part.added
             ? "diff-added"
