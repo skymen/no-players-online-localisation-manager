@@ -8,7 +8,11 @@
     "start": "node node.js",
     "serve": "python3 -m http.server 8000"
   },
-  "keywords": ["google-sheets", "csv", "data-fetcher"],
+  "keywords": [
+    "google-sheets",
+    "csv",
+    "data-fetcher"
+  ],
   "engines": {
     "node": ">=18.0.0"
   }

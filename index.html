@@ -1,116 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>No Players Online Localisation - Data Fetcher</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        
-        .header {
-            text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header h1 {
-            margin: 0;
-            font-size: 2.5rem;
-        }
-        
-        .header p {
-            margin: 0.5rem 0 0 0;
-            opacity: 0.9;
-        }
-        
-        .controls {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-        }
-        
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .loading {
-            text-align: center;
-            color: #666;
-            font-style: italic;
-        }
-        
-        .console {
-            background: #1e1e1e;
-            color: #d4d4d4;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            margin-top: 20px;
-            max-height: 600px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        
-        .console:empty::before {
-            content: "Console output will appear here...";
-            color: #666;
-            font-style: italic;
-        }
-        
-        .error {
-            color: #ff6b6b;
-        }
-        
-        .success {
-            color: #51cf66;
-        }
-        
-        .info {
-            color: #74c0fc;
-        }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+
+      .header {
+        text-align: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 2.5rem;
+      }
+
+      .header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+      }
+
+      .controls {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .loading {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+      }
+
+      .console {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 20px;
+        border-radius: 8px;
+        font-family: "Courier New", monospace;
+        margin-top: 20px;
+        max-height: 600px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .console:empty::before {
+        content: "Console output will appear here...";
+        color: #666;
+        font-style: italic;
+      }
+
+      .error {
+        color: #ff6b6b;
+      }
+
+      .success {
+        color: #51cf66;
+      }
+
+      .info {
+        color: #74c0fc;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="header">
-        <h1>📊 Data Fetcher</h1>
-        <p>Fetch and display data from Google Sheets CSV</p>
+      <h1>📊 Data Fetcher</h1>
+      <p>Fetch and display data from Google Sheets CSV</p>
     </div>
-    
+
     <div class="controls">
-        <button id="fetchButton" onclick="fetchAndDisplayData()">
-            🚀 Fetch Google Sheets Data
-        </button>
+      <button id="fetchButton" onclick="fetchAndDisplayData()">
+        🚀 Fetch Google Sheets Data
+      </button>
     </div>
-    
+
     <div id="console" class="console"></div>
 
     <script type="module" src="index.js"></script>
-</body>
+  </body>
 </html>
