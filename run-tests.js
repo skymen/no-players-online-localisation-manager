@@ -133,6 +133,59 @@ class SimpleDiff {
     }
     return result;
   }
+
+  static diffChars(text1, text2) {
+    // Character-level diff for testing
+    const chars1 = text1.split("");
+    const chars2 = text2.split("");
+    const result = [];
+
+    let i = 0,
+      j = 0;
+    while (i < chars1.length || j < chars2.length) {
+      if (i >= chars1.length) {
+        // Collect consecutive added characters
+        let addedChars = "";
+        while (j < chars2.length) {
+          addedChars += chars2[j];
+          j++;
+        }
+        if (addedChars) result.push({ added: true, value: addedChars });
+      } else if (j >= chars2.length) {
+        // Collect consecutive removed characters
+        let removedChars = "";
+        while (i < chars1.length) {
+          removedChars += chars1[i];
+          i++;
+        }
+        if (removedChars) result.push({ removed: true, value: removedChars });
+      } else if (chars1[i] === chars2[j]) {
+        // Collect consecutive unchanged characters
+        let unchangedChars = "";
+        while (
+          i < chars1.length &&
+          j < chars2.length &&
+          chars1[i] === chars2[j]
+        ) {
+          unchangedChars += chars1[i];
+          i++;
+          j++;
+        }
+        if (unchangedChars) result.push({ value: unchangedChars });
+      } else {
+        // Handle character difference - look ahead for better matching
+        let removedChars = chars1[i];
+        let addedChars = chars2[j];
+        i++;
+        j++;
+
+        // Simple approach: mark as removed/added
+        result.push({ removed: true, value: removedChars });
+        result.push({ added: true, value: addedChars });
+      }
+    }
+    return result;
+  }
 }
 
 // Mock diff module functions for Node.js
@@ -141,6 +194,10 @@ function generateDiff(text1, text2) {
   return hasMultipleLines
     ? SimpleDiff.diffLines(text1, text2)
     : SimpleDiff.diffWords(text1, text2);
+}
+
+function generateCharDiff(text1, text2) {
+  return SimpleDiff.diffChars(text1, text2);
 }
 
 function getDiffStats(diff) {
@@ -216,6 +273,40 @@ const testCases = [
   },
 ];
 
+// Character-level test cases
+const charTestCases = [
+  {
+    name: "Character diff - simple word change",
+    text1: "Hello world",
+    text2: "Hello universe",
+  },
+  {
+    name: "Character diff - character insertion",
+    text1: "test",
+    text2: "testing",
+  },
+  {
+    name: "Character diff - character deletion",
+    text1: "testing",
+    text2: "test",
+  },
+  {
+    name: "Character diff - character replacement",
+    text1: "cat",
+    text2: "bat",
+  },
+  {
+    name: "Character diff - whitespace changes",
+    text1: "hello    world",
+    text2: "hello world",
+  },
+  {
+    name: "Character diff - mixed changes",
+    text1: "The quick brown fox",
+    text2: "A quick red fox",
+  },
+];
+
 function runTests() {
   console.log("=== Diff Module Test Results ===\n");
 
@@ -247,6 +338,39 @@ function runTests() {
       console.log("✓ Test completed successfully\n");
     } catch (error) {
       console.log(`✗ Test failed: ${error.message}\n`);
+    }
+  });
+
+  console.log("=== Character-Level Diff Tests ===\n");
+
+  charTestCases.forEach((testCase, index) => {
+    console.log(`Char Test ${index + 1}: ${testCase.name}`);
+    console.log(`Text 1: ${JSON.stringify(testCase.text1)}`);
+    console.log(`Text 2: ${JSON.stringify(testCase.text2)}`);
+
+    try {
+      const charDiff = generateCharDiff(testCase.text1, testCase.text2);
+      const stats = getDiffStats(charDiff);
+
+      console.log(
+        `Character Result: ${stats.additions} additions, ${stats.deletions} deletions, ${stats.unchanged} unchanged`
+      );
+
+      // Show character diff parts
+      console.log("Character diff parts:");
+      charDiff.forEach((part, i) => {
+        const type = part.added
+          ? "[ADDED]"
+          : part.removed
+          ? "[REMOVED]"
+          : "[UNCHANGED]";
+        const value = JSON.stringify(part.value);
+        console.log(`  ${i}: ${type} ${value}`);
+      });
+
+      console.log("✓ Character test completed successfully\n");
+    } catch (error) {
+      console.log(`✗ Character test failed: ${error.message}\n`);
     }
   });
 }

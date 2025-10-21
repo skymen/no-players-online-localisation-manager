@@ -10,6 +10,8 @@ import {
   getDiffStats,
   areTextsIdentical,
   getDiffSummary,
+  generateCharDiff,
+  generateEnhancedLineDiff,
 } from "./diffModule.js";
 
 /**
@@ -41,6 +43,18 @@ function runTests() {
     { name: "Edge case - special characters", test: testSpecialCharacters },
     { name: "Edge case - HTML content", test: testHTMLContent },
     { name: "Edge case - very long text", test: testLongText },
+
+    // Character-level diff tests
+    { name: "Character diff - simple change", test: testCharDiffSimple },
+    { name: "Character diff - insertion", test: testCharDiffInsertion },
+    { name: "Character diff - deletion", test: testCharDiffDeletion },
+    { name: "Character diff - replacement", test: testCharDiffReplacement },
+    { name: "Character diff - whitespace", test: testCharDiffWhitespace },
+    { name: "Enhanced line diff - modifications", test: testEnhancedLineDiff },
+    {
+      name: "Enhanced line diff - mixed changes",
+      test: testEnhancedLineDiffMixed,
+    },
 
     // Function-specific tests
     { name: "Stats calculation", test: testStatsCalculation },
@@ -457,6 +471,215 @@ function testSummaryGeneration() {
     return {
       success: false,
       message: "Different texts should not have 'identical' type",
+    };
+  }
+
+  return { success: true };
+}
+
+// ========================
+// Character-level diff tests
+// ========================
+
+function testCharDiffSimple() {
+  const oldLine = "Hello world";
+  const newLine = "Hello universe";
+
+  const charDiff = generateCharDiff(oldLine, newLine);
+
+  // Should have: "Hello ", "world"(removed), "universe"(added)
+  if (charDiff.length < 3) {
+    return {
+      success: false,
+      message: `Expected at least 3 diff parts, got ${charDiff.length}`,
+    };
+  }
+
+  // Check for correct structure
+  const hasRemoved = charDiff.some(
+    (part) => part.removed && part.value.includes("world")
+  );
+  const hasAdded = charDiff.some(
+    (part) => part.added && part.value.includes("universe")
+  );
+  const hasUnchanged = charDiff.some(
+    (part) => !part.added && !part.removed && part.value.includes("Hello")
+  );
+
+  if (!hasRemoved || !hasAdded || !hasUnchanged) {
+    return {
+      success: false,
+      message:
+        "Character diff should correctly identify removed, added, and unchanged parts",
+    };
+  }
+
+  return { success: true };
+}
+
+function testCharDiffInsertion() {
+  const oldLine = "Hello world";
+  const newLine = "Hello beautiful world";
+
+  const charDiff = generateCharDiff(oldLine, newLine);
+
+  const hasAdded = charDiff.some(
+    (part) => part.added && part.value.includes("beautiful")
+  );
+  const hasUnchanged = charDiff.some((part) => !part.added && !part.removed);
+
+  if (!hasAdded || !hasUnchanged) {
+    return {
+      success: false,
+      message: "Character diff should detect character insertion",
+    };
+  }
+
+  return { success: true };
+}
+
+function testCharDiffDeletion() {
+  const oldLine = "Hello beautiful world";
+  const newLine = "Hello world";
+
+  const charDiff = generateCharDiff(oldLine, newLine);
+
+  const hasRemoved = charDiff.some(
+    (part) => part.removed && part.value.includes("beautiful")
+  );
+  const hasUnchanged = charDiff.some((part) => !part.added && !part.removed);
+
+  if (!hasRemoved || !hasUnchanged) {
+    return {
+      success: false,
+      message: "Character diff should detect character deletion",
+    };
+  }
+
+  return { success: true };
+}
+
+function testCharDiffReplacement() {
+  const oldLine = "The quick brown fox";
+  const newLine = "The quick red fox";
+
+  const charDiff = generateCharDiff(oldLine, newLine);
+
+  const hasRemoved = charDiff.some(
+    (part) => part.removed && part.value.includes("brown")
+  );
+  const hasAdded = charDiff.some(
+    (part) => part.added && part.value.includes("red")
+  );
+  const hasUnchanged = charDiff.some(
+    (part) => !part.added && !part.removed && part.value.includes("fox")
+  );
+
+  if (!hasRemoved || !hasAdded || !hasUnchanged) {
+    return {
+      success: false,
+      message: "Character diff should detect character replacement",
+    };
+  }
+
+  return { success: true };
+}
+
+function testCharDiffWhitespace() {
+  const oldLine = "Hello    world";
+  const newLine = "Hello world";
+
+  const charDiff = generateCharDiff(oldLine, newLine);
+
+  // Should detect whitespace changes
+  const hasWhitespaceChange = charDiff.some(
+    (part) => (part.added || part.removed) && /\s/.test(part.value)
+  );
+
+  if (!hasWhitespaceChange) {
+    return {
+      success: false,
+      message: "Character diff should detect whitespace changes",
+    };
+  }
+
+  return { success: true };
+}
+
+function testEnhancedLineDiff() {
+  const oldText = "function test() {\n  return 42;\n}";
+  const newText = "function testFunction() {\n  return 42;\n}";
+
+  const enhancedDiff = generateEnhancedLineDiff(oldText, newText);
+
+  // Should have one modified line with character-level details
+  const modifiedLine = enhancedDiff.find(
+    (part) => part.lineType === "modified"
+  );
+
+  if (!modifiedLine) {
+    return {
+      success: false,
+      message: "Enhanced line diff should detect line modifications",
+    };
+  }
+
+  if (!modifiedLine.charDiff || !Array.isArray(modifiedLine.charDiff)) {
+    return {
+      success: false,
+      message: "Modified line should include character-level diff details",
+    };
+  }
+
+  // Check that character diff shows the function name change
+  const hasNameChange = modifiedLine.charDiff.some(
+    (part) =>
+      (part.added && part.value.includes("Function")) ||
+      (part.removed && !part.value.includes("Function"))
+  );
+
+  if (!hasNameChange) {
+    return {
+      success: false,
+      message: "Character diff should show the specific name change",
+    };
+  }
+
+  return { success: true };
+}
+
+function testEnhancedLineDiffMixed() {
+  const oldText = "Line 1\nOld line 2\nLine 3\nLine 4";
+  const newText = "Line 1\nNew line 2\nLine 3\nAdded line 5\nLine 4";
+
+  const enhancedDiff = generateEnhancedLineDiff(oldText, newText);
+
+  // Should have: unchanged, modified, unchanged, added, unchanged
+  const unchangedCount = enhancedDiff.filter(
+    (part) => part.lineType === "unchanged"
+  ).length;
+  const modifiedCount = enhancedDiff.filter(
+    (part) => part.lineType === "modified"
+  ).length;
+  const addedCount = enhancedDiff.filter(
+    (part) => part.lineType === "added"
+  ).length;
+
+  if (unchangedCount < 2 || modifiedCount < 1 || addedCount < 1) {
+    return {
+      success: false,
+      message: `Enhanced diff should detect mixed changes. Got: ${unchangedCount} unchanged, ${modifiedCount} modified, ${addedCount} added`,
+    };
+  }
+
+  // Check that modified line has character diff
+  const modifiedLine = enhancedDiff.find(
+    (part) => part.lineType === "modified"
+  );
+  if (!modifiedLine || !modifiedLine.charDiff) {
+    return {
+      success: false,
+      message: "Modified line should include character-level diff",
     };
   }
 

@@ -4,7 +4,124 @@
  */
 
 /**
- * Generate a detailed diff between two strings
+ * Generate a // Check if a line is part of the LCS at a given position
+function isInLCS(line, pos, arr2, lcs) {
+  return lcs.some(item => item.value === line && item.j >= pos);
+}
+
+/**
+ * Generate character-level diff for individual lines
+ * @param {string} oldLine - Original line
+ * @param {string} newLine - New line
+ * @param {Object} options - Diff options
+ * @returns {Array} Array of character-level diff parts
+ */
+export function generateCharDiff(oldLine, newLine, options = {}) {
+  if (typeof Diff === "undefined") {
+    throw new Error(
+      "Diff library not loaded. Please include diff.js in your HTML."
+    );
+  }
+
+  const defaultOptions = {
+    ignoreWhitespace: false,
+    ignoreCase: false,
+    ...options,
+  };
+
+  // Use character-level diff from the Diff library
+  const diff = Diff.diffChars(oldLine || "", newLine || "", defaultOptions);
+
+  return diff.map((part) => ({
+    added: part.added || false,
+    removed: part.removed || false,
+    value: part.value,
+    count: part.count,
+  }));
+}
+
+/**
+ * Generate enhanced line diff with character-level details for changed lines
+ * @param {string} oldText - Original text
+ * @param {string} newText - New text
+ * @param {Object} options - Diff options
+ * @returns {Array} Array of diff parts with character-level details
+ */
+export function generateEnhancedLineDiff(oldText, newText, options = {}) {
+  const lines1 = oldText.split("\n");
+  const lines2 = newText.split("\n");
+
+  // Use LCS algorithm for better line matching
+  const lcs = computeLCS(lines1, lines2);
+  const diff = [];
+
+  let i = 0,
+    j = 0;
+
+  while (i < lines1.length || j < lines2.length) {
+    if (i < lines1.length && j < lines2.length && lines1[i] === lines2[j]) {
+      // Lines match exactly
+      diff.push({
+        value: lines1[i] + "\n",
+        lineType: "unchanged",
+      });
+      i++;
+      j++;
+    } else if (
+      i < lines1.length &&
+      (j >= lines2.length || !isInLCS(lines1[i], j, lines2, lcs))
+    ) {
+      // Line removed
+      diff.push({
+        removed: true,
+        value: lines1[i] + "\n",
+        lineType: "removed",
+      });
+      i++;
+    } else if (j < lines2.length) {
+      // Line added
+      diff.push({
+        added: true,
+        value: lines2[j] + "\n",
+        lineType: "added",
+      });
+      j++;
+    }
+  }
+
+  // Now enhance with character-level diffs for modified sections
+  const enhancedDiff = [];
+
+  for (let k = 0; k < diff.length; k++) {
+    const current = diff[k];
+
+    // Check if this is a potential line modification (removed followed by added)
+    if (current.removed && k + 1 < diff.length && diff[k + 1].added) {
+      const removedLine = current.value.replace(/\n$/, "");
+      const addedLine = diff[k + 1].value.replace(/\n$/, "");
+
+      // Generate character-level diff for this line modification
+      const charDiff = generateCharDiff(removedLine, addedLine, options);
+
+      enhancedDiff.push({
+        lineType: "modified",
+        oldLine: removedLine,
+        newLine: addedLine,
+        charDiff: charDiff,
+        value: addedLine + "\n", // For compatibility
+        modified: true,
+      });
+
+      k++; // Skip the next added line since we processed it
+    } else {
+      enhancedDiff.push(current);
+    }
+  }
+
+  return enhancedDiff;
+}
+
+/**ed diff between two strings
  * @param {string} oldText - Original text
  * @param {string} newText - New text
  * @param {Object} options - Diff options

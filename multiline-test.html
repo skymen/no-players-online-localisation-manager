@@ -215,28 +215,128 @@ custom content</textarea
       <div id="test4-stats" class="stats"></div>
     </div>
 
-    <script type="module">
-      import { generateDiffHTML, getDiffStats } from "./diffModule.js";
+    <div class="test-container">
+      <div class="test-title">Test 5: Character-Level Diff (Single Line)</div>
+      <div class="text-inputs">
+        <div class="text-input">
+          <label>Original Text:</label>
+          <textarea id="test5-old">
+The quick brown fox jumps over the lazy dog</textarea
+          >
+        </div>
+        <div class="text-input">
+          <label>New Text:</label>
+          <textarea id="test5-new">
+The quick red fox leaps over the sleepy cat</textarea
+          >
+        </div>
+      </div>
+      <button class="run-button" onclick="runTest(5, 'char')">
+        Run Character Diff
+      </button>
+      <button class="run-button" onclick="runTest(5, 'enhanced')">
+        Run Enhanced Line Diff
+      </button>
+      <div id="test5-result" class="diff-result"></div>
+      <div id="test5-stats" class="stats"></div>
+    </div>
 
-      window.runTest = function (testNumber) {
+    <script type="module">
+      import {
+        generateDiffHTML,
+        getDiffStats,
+        generateCharDiff,
+        generateEnhancedLineDiff,
+      } from "./diffModule.js";
+
+      window.runTest = function (testNumber, diffType = "normal") {
         const oldText = document.getElementById(`test${testNumber}-old`).value;
         const newText = document.getElementById(`test${testNumber}-new`).value;
 
         try {
-          // Generate diff with line-based comparison for multiline
-          const diffHtml = generateDiffHTML(oldText, newText, {
-            useLineDiff: true,
-            addedClass: "diff-added",
-            removedClass: "diff-removed",
-            unchangedClass: "diff-unchanged",
-          });
+          let diffHtml = "";
+          let stats = {};
+          let description = "";
 
-          const stats = getDiffStats(oldText, newText);
+          if (diffType === "char") {
+            // Character-level diff
+            const charDiff = generateCharDiff(oldText, newText);
+            diffHtml = charDiff
+              .map((part) => {
+                const className = part.added
+                  ? "diff-added"
+                  : part.removed
+                  ? "diff-removed"
+                  : "diff-unchanged";
+                const escapedValue = part.value
+                  .replace(/&/g, "&amp;")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;");
+                return `<span class="${className}">${escapedValue}</span>`;
+              })
+              .join("");
+
+            stats = getDiffStats(oldText, newText);
+            description =
+              "Character-level diff showing precise character changes";
+          } else if (diffType === "enhanced") {
+            // Enhanced line diff with character details
+            const enhancedDiff = generateEnhancedLineDiff(oldText, newText);
+            diffHtml = enhancedDiff
+              .map((part) => {
+                if (part.lineType === "modified" && part.charDiff) {
+                  const charDiffHtml = part.charDiff
+                    .map((charPart) => {
+                      const className = charPart.added
+                        ? "diff-added"
+                        : charPart.removed
+                        ? "diff-removed"
+                        : "diff-unchanged";
+                      const escapedValue = charPart.value
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;");
+                      return `<span class="${className}">${escapedValue}</span>`;
+                    })
+                    .join("");
+                  return `<div><strong>Modified line with character-level diff:</strong><br>${charDiffHtml}</div>`;
+                } else {
+                  const className = part.added
+                    ? "diff-added"
+                    : part.removed
+                    ? "diff-removed"
+                    : "diff-unchanged";
+                  const escapedValue = part.value
+                    ? part.value
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                    : "";
+                  return `<span class="${className}">${escapedValue}</span>`;
+                }
+              })
+              .join("");
+
+            stats = getDiffStats(oldText, newText);
+            description =
+              "Enhanced line diff with character-level details for modified lines";
+          } else {
+            // Normal diff
+            diffHtml = generateDiffHTML(oldText, newText, {
+              useLineDiff: true,
+              addedClass: "diff-added",
+              removedClass: "diff-removed",
+              unchangedClass: "diff-unchanged",
+            });
+
+            stats = getDiffStats(oldText, newText);
+            description = "Standard line-based diff";
+          }
 
           document.getElementById(`test${testNumber}-result`).innerHTML =
             diffHtml;
           document.getElementById(`test${testNumber}-stats`).innerHTML =
-            `<span class="success">✓ Test passed</span> - ` +
+            `<span class="success">✓ Test passed</span> - ${description}<br>` +
             `Added: ${stats.addedWords} words, ` +
             `Removed: ${stats.removedWords} words, ` +
             `Unchanged: ${stats.unchangedWords} words`;
@@ -254,6 +354,8 @@ custom content</textarea
           for (let i = 1; i <= 4; i++) {
             runTest(i);
           }
+          // Also run character diff for test 5
+          runTest(5, "char");
         }, 100);
       });
     </script>
