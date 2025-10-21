@@ -1,5 +1,10 @@
 import { fetchGoogleSheetsData } from "./dataFetcher.js";
 import { CONFIG } from "./config.js";
+import {
+  parseCSV,
+  generateLocalizationCSV,
+  extractLanguages,
+} from "./csvParser.js";
 
 class AdminManager {
   constructor() {
@@ -60,17 +65,7 @@ class AdminManager {
 
   extractLanguages() {
     if (!this.originalData || this.originalData.length === 0) return;
-
-    const firstRow = this.originalData[0];
-    this.languages = Object.keys(firstRow).filter(
-      (key) =>
-        key !== "termID" &&
-        key !== "notes" &&
-        key !== "shouldBeTranslated" &&
-        key !== "translationNeedsToBeUpdated" &&
-        key !== "English" &&
-        key.trim() !== ""
-    );
+    this.languages = extractLanguages(this.originalData);
   }
 
   displayDataOverview() {
@@ -160,7 +155,7 @@ class AdminManager {
 
     try {
       const csvText = await this.readFileAsText(file);
-      const uploadedData = this.parseCSV(csvText);
+      const uploadedData = parseCSV(csvText);
       const changes = this.compareBaseFiles(uploadedData);
       this.displayChanges(changes);
       this.hideStatus();
@@ -176,47 +171,6 @@ class AdminManager {
       reader.onerror = (e) => reject(new Error("Failed to read file"));
       reader.readAsText(file);
     });
-  }
-
-  parseCSV(csvText) {
-    const lines = csvText.trim().split("\n");
-    if (lines.length === 0) return [];
-
-    const headers = this.parseCSVLine(lines[0]);
-    const data = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = this.parseCSVLine(lines[i]);
-      const row = {};
-      headers.forEach((header, index) => {
-        row[header] = values[index] || "";
-      });
-      data.push(row);
-    }
-
-    return data;
-  }
-
-  parseCSVLine(line) {
-    const result = [];
-    let current = "";
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === "," && !inQuotes) {
-        result.push(current.trim().replace(/^"|"$/g, ""));
-        current = "";
-      } else {
-        current += char;
-      }
-    }
-
-    result.push(current.trim().replace(/^"|"$/g, ""));
-    return result;
   }
 
   compareBaseFiles(uploadedData) {
@@ -422,42 +376,13 @@ class AdminManager {
   }
 
   downloadUpdatedFile() {
-    const csv = this.generateCSV(this.modifiedData);
+    const csv = generateLocalizationCSV(this.modifiedData, this.languages);
     this.downloadFile(csv, "updated_localization.csv");
 
     // Mark as saved
     this.hasUnsavedChanges = false;
     this.hideUnsavedChanges();
     document.getElementById("downloadSection").classList.add("hidden");
-  }
-
-  generateCSV(data) {
-    if (!data || data.length === 0) return "";
-
-    const allKeys = new Set();
-    data.forEach((row) => Object.keys(row).forEach((key) => allKeys.add(key)));
-
-    const headers = [
-      "termID",
-      "notes",
-      "shouldBeTranslated",
-      "translationNeedsToBeUpdated",
-      "English",
-    ];
-    this.languages.forEach((lang) => headers.push(lang));
-
-    const rows = [headers];
-
-    data.forEach((row) => {
-      const csvRow = headers.map((header) => row[header] || "");
-      rows.push(csvRow);
-    });
-
-    return rows
-      .map((row) =>
-        row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(",")
-      )
-      .join("\n");
   }
 
   downloadFile(content, filename) {

@@ -1,4 +1,5 @@
 import { CONFIG } from "./config.js";
+import { parseCSV } from "./csvParser.js";
 
 export async function fetchGoogleSheetsData(url = CONFIG.GOOGLE_SHEETS_URL) {
   try {
@@ -20,51 +21,8 @@ export async function fetchGoogleSheetsData(url = CONFIG.GOOGLE_SHEETS_URL) {
   }
 }
 
-export function parseCSV(csvText) {
-  const lines = csvText.trim().split("\n");
-
-  if (lines.length === 0) {
-    return [];
-  }
-
-  const headers = parseCSVLine(lines[0]);
-
-  const data = lines.slice(1).map((line, index) => {
-    const values = parseCSVLine(line);
-    const row = {};
-
-    headers.forEach((header, i) => {
-      row[header] = values[i] || "";
-    });
-
-    return row;
-  });
-
-  console.log(`Parsed ${data.length} rows of data`);
-  return data;
-}
-
-function parseCSVLine(line) {
-  const result = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-
-    if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === "," && !inQuotes) {
-      result.push(current.trim());
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-
-  result.push(current.trim());
-  return result;
-}
+// Re-export parseCSV for backward compatibility
+export { parseCSV } from "./csvParser.js";
 
 export function displayData(data) {
   console.log("\n=== Google Sheets Data ===");

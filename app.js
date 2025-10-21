@@ -1,5 +1,10 @@
 import { fetchGoogleSheetsData } from "./dataFetcher.js";
 import { CONFIG } from "./config.js";
+import {
+  parseCSV,
+  generateLocalizationCSV,
+  extractLanguages,
+} from "./csvParser.js";
 
 class LocalisationManager {
   constructor() {
@@ -61,17 +66,7 @@ class LocalisationManager {
 
   extractLanguages() {
     if (!this.data || this.data.length === 0) return;
-
-    const firstRow = this.data[0];
-    this.availableLanguages = Object.keys(firstRow).filter(
-      (key) =>
-        key !== "termID" &&
-        key !== "notes" &&
-        key !== "shouldBeTranslated" &&
-        key !== "translationNeedsToBeUpdated" &&
-        key !== "English" &&
-        key.trim() !== ""
-    );
+    this.availableLanguages = extractLanguages(this.data);
   }
 
   populateLanguageDropdown() {
@@ -174,7 +169,7 @@ class LocalisationManager {
 
     try {
       const csvText = await this.readFileAsText(file);
-      this.uploadedData = this.parseCSV(csvText);
+      this.uploadedData = parseCSV(csvText);
       const report = this.compareAndGenerateReport();
       this.displayReport(report);
       this.showStep(4);
@@ -191,47 +186,6 @@ class LocalisationManager {
       reader.onerror = (e) => reject(new Error("Failed to read file"));
       reader.readAsText(file);
     });
-  }
-
-  parseCSV(csvText) {
-    const lines = csvText.trim().split("\n");
-    if (lines.length === 0) return [];
-
-    const headers = this.parseCSVLine(lines[0]);
-    const data = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = this.parseCSVLine(lines[i]);
-      const row = {};
-      headers.forEach((header, index) => {
-        row[header] = values[index] || "";
-      });
-      data.push(row);
-    }
-
-    return data;
-  }
-
-  parseCSVLine(line) {
-    const result = [];
-    let current = "";
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === "," && !inQuotes) {
-        result.push(current.trim().replace(/^"|"$/g, ""));
-        current = "";
-      } else {
-        current += char;
-      }
-    }
-
-    result.push(current.trim().replace(/^"|"$/g, ""));
-    return result;
   }
 
   compareAndGenerateReport() {
@@ -403,88 +357,44 @@ class LocalisationManager {
   generateLatestVersionCSV(language) {
     if (!this.data) return "";
 
-    const headers = [
-      "termID",
-      "notes",
-      "shouldBeTranslated",
-      "translationNeedsToBeUpdated",
-      "English",
-      language,
-    ];
-    const rows = [headers];
-
     // Check if this is a new language (not in the latest data)
     const isNewLanguage = !this.availableLanguages.includes(language);
 
-    this.data.forEach((row) => {
-      if (row.shouldBeTranslated === "TRUE") {
+    const processedData = this.data
+      .filter((row) => row.shouldBeTranslated === "TRUE")
+      .map((row) => {
         const languageText = row[language] || "";
 
         // Logic for shouldBeTranslated: TRUE if the selected language doesn't have text
         const shouldBeTranslated = !languageText ? "TRUE" : "FALSE";
 
         // Logic for translationNeedsToBeUpdated:
-        // - If new language: FALSE (since there's nothing to update)
-        // - If existing language: mirror what's in latest file if shouldBeTranslated was set to FALSE
         let translationNeedsToBeUpdated;
         if (isNewLanguage) {
           translationNeedsToBeUpdated = "FALSE";
         } else {
-          // If shouldBeTranslated is FALSE (language has text), use the original value
-          // If shouldBeTranslated is TRUE (no text), set to FALSE
           translationNeedsToBeUpdated =
             shouldBeTranslated === "FALSE"
               ? row.translationNeedsToBeUpdated || "FALSE"
               : "FALSE";
         }
 
-        rows.push([
-          row.termID || "",
-          row.notes || "",
-          shouldBeTranslated,
-          translationNeedsToBeUpdated,
-          row.English || "",
-          languageText,
-        ]);
-      }
-    });
+        return {
+          termID: row.termID || "",
+          notes: row.notes || "",
+          shouldBeTranslated: shouldBeTranslated,
+          translationNeedsToBeUpdated: translationNeedsToBeUpdated,
+          English: row.English || "",
+          [language]: languageText,
+        };
+      });
 
-    return rows
-      .map((row) =>
-        row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(",")
-      )
-      .join("\n");
+    return generateLocalizationCSV(processedData, [language]);
   }
 
   generateProcessedCSV() {
     if (!this.processedData) return "";
-
-    const headers = [
-      "termID",
-      "notes",
-      "shouldBeTranslated",
-      "translationNeedsToBeUpdated",
-      "English",
-      this.selectedLanguage,
-    ];
-    const rows = [headers];
-
-    this.processedData.forEach((row) => {
-      rows.push([
-        row.termID || "",
-        row.notes || "",
-        row.shouldBeTranslated || "",
-        row.translationNeedsToBeUpdated || "",
-        row.English || "",
-        row[this.selectedLanguage] || "",
-      ]);
-    });
-
-    return rows
-      .map((row) =>
-        row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(",")
-      )
-      .join("\n");
+    return generateLocalizationCSV(this.processedData, [this.selectedLanguage]);
   }
 
   downloadFile(content, filename) {
