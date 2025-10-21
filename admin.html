@@ -253,6 +253,186 @@
       .hidden {
         display: none;
       }
+
+      /* Diff Styles */
+      .diff-container {
+        background: var(--bg-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 4px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .diff-added {
+        background-color: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+        padding: 0.1rem 0.2rem;
+        border-radius: 2px;
+      }
+
+      .diff-removed {
+        background-color: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        padding: 0.1rem 0.2rem;
+        border-radius: 2px;
+        text-decoration: line-through;
+      }
+
+      .diff-unchanged {
+        color: var(--text-color);
+      }
+
+      .diff-header {
+        font-weight: bold;
+        color: var(--link-color);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .diff-toggle-btn {
+        background: var(--accent-color);
+        color: var(--text-color);
+        border: none;
+        padding: 0.3rem 0.6rem;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: opacity 0.2s ease;
+      }
+
+      .diff-toggle-btn:hover {
+        opacity: 0.8;
+      }
+
+      .split-view-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      .split-section {
+        border: 1px solid var(--accent-color);
+        border-radius: 4px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .split-header {
+        padding: 0.5rem;
+        font-weight: bold;
+        font-size: 0.8rem;
+        border-bottom: 1px solid var(--accent-color);
+      }
+
+      .old-header {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+      }
+
+      .new-header {
+        background: rgba(34, 197, 94, 0.1);
+        color: #22c55e;
+      }
+
+      .split-content-wrapper {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      .line-numbers {
+        width: 40px;
+        background: var(--secondary-bg);
+        border-right: 1px solid var(--accent-color);
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 0.8rem;
+        line-height: 1.4;
+        overflow: hidden;
+        user-select: none;
+      }
+
+      .line-number {
+        padding: 0 0.3rem;
+        text-align: right;
+        color: var(--link-color);
+        opacity: 0.7;
+        height: 1.4em;
+        border-bottom: 1px solid transparent;
+      }
+
+      .empty-line-number {
+        opacity: 0.3;
+        color: var(--accent-color);
+      }
+
+      .split-content {
+        flex: 1;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        max-height: 300px;
+        overflow-y: auto;
+        overflow-x: auto;
+      }
+
+      .content-line {
+        padding: 0 0.5rem;
+        min-height: 1.4em;
+        border-bottom: 1px solid transparent;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .normal-line {
+        background: transparent;
+      }
+
+      .empty-line {
+        background: rgba(128, 128, 128, 0.1);
+        color: var(--accent-color);
+        opacity: 0.5;
+        font-style: italic;
+      }
+
+      .deleted-line {
+        background: rgba(239, 68, 68, 0.1);
+        border-left: 3px solid #ef4444;
+      }
+
+      .added-line {
+        background: rgba(34, 197, 94, 0.1);
+        border-left: 3px solid #22c55e;
+      }
+
+      .diff-summary {
+        font-size: 0.8rem;
+        opacity: 0.8;
+        margin-bottom: 0.5rem;
+      }
+
+      .term-diff-item {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: var(--bg-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 6px;
+      }
+
+      .term-diff-title {
+        font-weight: bold;
+        color: var(--link-color);
+        margin-bottom: 0.75rem;
+        font-size: 1rem;
+      }
     </style>
   </head>
   <body>
@@ -348,6 +528,56 @@
     </div>
 
     <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/diff@5.1.0/dist/diff.min.js"></script>
+    <script>
+      // Global function for toggling between diff view and split view
+      window.toggleDiffView = function (index) {
+        const diffView = document.getElementById(`diffView${index}`);
+        const splitView = document.getElementById(`splitView${index}`);
+        const toggleBtn = document.getElementById(`toggleBtn${index}`);
+
+        if (diffView && splitView && toggleBtn) {
+          const isShowingDiff = !diffView.classList.contains("hidden");
+
+          if (isShowingDiff) {
+            // Switch to split view
+            diffView.classList.add("hidden");
+            splitView.classList.remove("hidden");
+            toggleBtn.textContent = "🔄 Diff View";
+          } else {
+            // Switch to diff view
+            splitView.classList.add("hidden");
+            diffView.classList.remove("hidden");
+            toggleBtn.textContent = "📋 Split View";
+          }
+        }
+      };
+
+      // Global function for synchronized scrolling
+      window.syncScroll = function (index, source) {
+        const oldContent = document.getElementById(`oldContent${index}`);
+        const newContent = document.getElementById(`newContent${index}`);
+
+        if (oldContent && newContent) {
+          const sourceElement = source === "old" ? oldContent : newContent;
+          const targetElement = source === "old" ? newContent : oldContent;
+
+          // Temporarily remove the scroll listener to avoid infinite loop
+          targetElement.onscroll = null;
+
+          // Sync scroll position
+          targetElement.scrollTop = sourceElement.scrollTop;
+          targetElement.scrollLeft = sourceElement.scrollLeft;
+
+          // Restore the scroll listener after a brief delay
+          setTimeout(() => {
+            targetElement.onscroll = function () {
+              syncScroll(index, source === "old" ? "new" : "old");
+            };
+          }, 10);
+        }
+      };
+    </script>
     <script type="module" src="admin.js"></script>
   </body>
 </html>
