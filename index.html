@@ -554,6 +554,94 @@
       .tutorial-step li {
         margin-bottom: 0.3rem;
       }
+
+      /* Server files section styles */
+      .server-files-section {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: var(--secondary-bg);
+        border-radius: 6px;
+        border: 1px solid var(--accent-color);
+      }
+
+      .server-file-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem;
+        background: var(--bg-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+      }
+
+      .server-file-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .server-file-info {
+        flex: 1;
+      }
+
+      .server-file-version {
+        font-weight: 600;
+        color: var(--link-color);
+        margin-bottom: 0.25rem;
+      }
+
+      .server-file-details {
+        font-size: 0.85rem;
+        color: var(--text-color);
+        opacity: 0.8;
+        margin-bottom: 0.5rem;
+      }
+
+      .server-file-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .server-file-btn {
+        padding: 0.4rem 0.8rem;
+        background: var(--accent-color);
+        color: var(--text-color);
+        border: none;
+        border-radius: 3px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+      }
+
+      .server-file-btn:hover {
+        opacity: 0.8;
+      }
+
+      .server-file-btn.validate {
+        background: var(--button-bg);
+      }
+
+      .merge-status {
+        padding: 0.4rem 0.8rem;
+        border-radius: 3px;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+
+      .merge-status.merged {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .merge-status.not-merged {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .merge-status.checking {
+        background: var(--secondary-bg);
+        color: var(--text-color);
+        opacity: 0.8;
+      }
     </style>
   </head>
   <body>
@@ -588,6 +676,14 @@
             Download latest version for
             <strong id="selectedLanguageName"></strong>
           </a>
+
+          <!-- Server Files Section -->
+          <div id="serverFilesSection" class="server-files-section hidden">
+            <h4 style="color: var(--link-color); margin: 0rem 0 0.5rem 0">
+              Files on the server
+            </h4>
+            <div id="serverFilesContent"></div>
+          </div>
 
           <!-- Hidden file input for direct access -->
           <input type="file" id="fileInput" accept=".csv" class="hidden" />

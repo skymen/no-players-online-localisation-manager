@@ -545,7 +545,6 @@ class AdminManager {
     // Add new terms
     Object.values(uploadedMap).forEach((newRow) => {
       if (newRow.termID && added.includes(newRow.termID)) {
-        debugger;
         const row = {
           termID: newRow.termID,
           notes: newRow.notes || "",
