@@ -275,6 +275,7 @@ class LocalisationManager {
     });
 
     const needsTranslation = [];
+    const missingTermsFoundInLatest = [];
     const needsUpdate = [];
     const needsUpdateDetails = []; // New: Store detailed info for diff view
     const processedRows = [];
@@ -307,9 +308,9 @@ class LocalisationManager {
 
       if (userRow) {
         const userEnglish = userRow.English || "";
-        const userLanguageText = userRow[userLang] || "";
+        const userLanguageText = (userRow[userLang] || "").trim();
 
-        // If user has provided a translation
+        // If user has provided a translation (and it's not empty)
         if (userLanguageText) {
           languageText = userLanguageText;
 
@@ -329,15 +330,27 @@ class LocalisationManager {
             translationNeedsToBeUpdated = "FALSE";
           }
         } else {
-          // User didn't provide translation, needs translation
+          // User didn't provide translation or it's empty
           translationNeedsToBeUpdated = "FALSE";
-          needsTranslation.push(termID);
-          languageText = ""; // No translation from user
+
+          // Check if this term already has a translation in the latest data
+          if (latestLanguageText) {
+            missingTermsFoundInLatest.push(termID);
+            languageText = latestLanguageText; // Keep the latest translation
+          } else {
+            needsTranslation.push(termID);
+            languageText = ""; // No translation available
+          }
         }
       } else {
-        // termID doesn't exist in user file, needs translation
-        needsTranslation.push(termID);
-        languageText = "";
+        // termID doesn't exist in user file
+        if (latestLanguageText) {
+          missingTermsFoundInLatest.push(termID);
+          languageText = latestLanguageText; // Keep the latest translation
+        } else {
+          needsTranslation.push(termID);
+          languageText = "";
+        }
       }
 
       processedRows.push({
@@ -354,9 +367,11 @@ class LocalisationManager {
 
     return {
       needsTranslation,
+      missingTermsFoundInLatest,
       needsUpdate,
       needsUpdateDetails, // New: Include detailed info
       totalNeedsTranslation: needsTranslation.length,
+      totalMissingTermsFoundInLatest: missingTermsFoundInLatest.length,
       totalNeedsUpdate: needsUpdate.length,
     };
   }
@@ -369,7 +384,11 @@ class LocalisationManager {
     reportHeader.textContent = `Translation Report for ${this.selectedLanguage}`;
 
     // Check if no updates or translations are needed
-    if (report.totalNeedsTranslation === 0 && report.totalNeedsUpdate === 0) {
+    if (
+      report.totalNeedsTranslation === 0 &&
+      report.totalMissingTermsFoundInLatest === 0 &&
+      report.totalNeedsUpdate === 0
+    ) {
       const html = `
         <div class="report">
           <h4>🎉 Translation Complete!</h4>
@@ -392,9 +411,10 @@ class LocalisationManager {
     // Regular report when translations/updates are needed
     let html = `
       <div class="report">
+        <p><strong>${report.totalNeedsTranslation}</strong> missing terms</p>
         <p><strong>${
-          report.totalNeedsTranslation
-        }</strong> terms need translation</p>
+          report.totalMissingTermsFoundInLatest
+        }</strong> missing terms that were found in latest file</p>
         <p><strong>${report.totalNeedsUpdate}</strong> terms need updates</p>
         
         ${
@@ -402,10 +422,29 @@ class LocalisationManager {
             ? `
           <div class="spoiler">
             <button class="spoiler-toggle" onclick="this.nextElementSibling.classList.toggle('show')">
-              Show terms needing translation (${report.totalNeedsTranslation})
+              Show missing terms (${report.totalNeedsTranslation})
             </button>
             <div class="spoiler-content">
               ${report.needsTranslation
+                .map((term) => `<div>${term}</div>`)
+                .join("")}
+            </div>
+          </div>
+        `
+            : ""
+        }
+        
+        ${
+          report.totalMissingTermsFoundInLatest > 0
+            ? `
+          <div class="spoiler">
+            <button class="spoiler-toggle" onclick="this.nextElementSibling.classList.toggle('show')">
+              Show missing terms found in latest file (${
+                report.totalMissingTermsFoundInLatest
+              })
+            </button>
+            <div class="spoiler-content">
+              ${report.missingTermsFoundInLatest
                 .map((term) => `<div>${term}</div>`)
                 .join("")}
             </div>
