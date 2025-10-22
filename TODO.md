@@ -1,2 +1,3 @@
 - Update wording so it looks less AI generated
 - Add a link to original sheet, and have a little tutorial on how to use the system
+- validate should open file picker directly instead of showing a file picker, and dropping a file in window should work

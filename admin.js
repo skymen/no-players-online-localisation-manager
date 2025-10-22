@@ -659,6 +659,15 @@ class AdminManager {
       this.hasUnsavedChanges = true;
       this.showUnsavedChanges();
       this.displayDataOverview(); // Refresh the overview
+
+      document.getElementById("changesSection").classList.add("hidden");
+      document.getElementById("downloadSection").classList.remove("hidden");
+
+      this.showStatus(
+        "Changes applied successfully! Don't forget to download the updated file.",
+        "success"
+      );
+      setTimeout(() => this.hideStatus(), 3000);
     }
   }
 

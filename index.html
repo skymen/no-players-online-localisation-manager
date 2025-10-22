@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Localisation Manager</title>
+    <title>NPO Localisation Manager</title>
     <style>
       :root {
         --accent-color: #555e54;
@@ -399,19 +399,18 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>🌐 Localisation Manager</h1>
-        <p>Manage translation files for your project</p>
+        <h1>NPO Localisation Manager</h1>
       </div>
 
       <div id="status" class="status hidden"></div>
 
       <div class="step active" id="step1">
-        <h3>Step 1: Fetching Data</h3>
+        <h3>Fetching Data</h3>
         <p>Loading latest translation data...</p>
       </div>
 
       <div class="step" id="step2">
-        <h3>Step 2: Select Language</h3>
+        <h3>Select Language</h3>
         <p>Choose a language to work with:</p>
 
         <select id="languageSelect">
@@ -424,13 +423,13 @@
       </div>
 
       <div class="step" id="step3">
-        <h3>Step 3: Choose Action</h3>
+        <h3>Choose Action</h3>
         <p>
           What would you like to do with
           <strong id="selectedLanguageName"></strong>?
         </p>
         <button class="btn btn-link" id="uploadFileBtn">
-          Upload Your File
+          Validate Your File
         </button>
         <button class="btn" id="downloadLatestBtn">
           Download Latest Version
@@ -447,7 +446,7 @@
       </div>
 
       <div class="step" id="step4">
-        <h3>Step 4: Translation Report</h3>
+        <h3>Translation Report</h3>
         <div id="reportContent"></div>
         <button class="btn btn-link hidden" id="downloadProcessedBtn">
           Download Updated CSV
