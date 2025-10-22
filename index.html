@@ -448,6 +448,19 @@
         font-size: 0.9rem;
         opacity: 0.7;
       }
+
+      /* Report actions styles */
+      .report-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        align-items: flex-start;
+      }
+
+      .report-actions .btn {
+        margin-right: 0;
+      }
     </style>
   </head>
   <body>
@@ -491,11 +504,16 @@
       </div>
 
       <div class="step" id="step3">
-        <h3>Translation Report</h3>
+        <h3 id="reportHeader">Translation Report</h3>
         <div id="reportContent"></div>
-        <button class="btn btn-link hidden" id="downloadProcessedBtn">
-          Download Updated CSV
-        </button>
+        <div class="report-actions">
+          <button class="btn btn-link hidden" id="downloadProcessedBtn">
+            Download Updated CSV
+          </button>
+          <button class="btn" id="backToLanguageBtn">
+            ← Back to Language Selection
+          </button>
+        </div>
       </div>
     </div>
 

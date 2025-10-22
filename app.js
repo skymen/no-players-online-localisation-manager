@@ -43,6 +43,9 @@ class LocalisationManager {
     document
       .getElementById("downloadProcessedBtn")
       .addEventListener("click", () => this.downloadProcessedFile());
+    document
+      .getElementById("backToLanguageBtn")
+      .addEventListener("click", () => this.goBackToLanguageSelection());
 
     // Set up drag and drop
     this.setupDragAndDrop();
@@ -360,12 +363,16 @@ class LocalisationManager {
 
   displayReport(report) {
     const reportContent = document.getElementById("reportContent");
+    const reportHeader = document.getElementById("reportHeader");
+
+    // Update the header to include the language name
+    reportHeader.textContent = `Translation Report for ${this.selectedLanguage}`;
 
     // Check if no updates or translations are needed
     if (report.totalNeedsTranslation === 0 && report.totalNeedsUpdate === 0) {
       const html = `
         <div class="report">
-          <h4>🎉 Translation Complete for ${this.selectedLanguage}!</h4>
+          <h4>🎉 Translation Complete!</h4>
           <p style="color: var(--link-color); font-size: 1.1rem; margin-bottom: 1rem;">
             <strong>Excellent work!</strong> All translations are up to date.
           </p>
@@ -385,7 +392,6 @@ class LocalisationManager {
     // Regular report when translations/updates are needed
     let html = `
       <div class="report">
-        <h4>Translation Report for ${this.selectedLanguage}</h4>
         <p><strong>${
           report.totalNeedsTranslation
         }</strong> terms need translation</p>
@@ -642,6 +648,29 @@ class LocalisationManager {
       link.click();
       document.body.removeChild(link);
     }
+  }
+
+  goBackToLanguageSelection() {
+    // Reset the language selection
+    document.getElementById("languageSelect").value = "";
+    this.selectedLanguage = null;
+
+    // Hide actions area and drop zone
+    document.getElementById("actionsArea").classList.add("hidden");
+    document.getElementById("dropZone").classList.add("hidden");
+
+    // Clear any uploaded data and processed data
+    this.uploadedData = null;
+    this.processedData = null;
+
+    // Reset file input
+    document.getElementById("fileInput").value = "";
+
+    // Hide download button
+    document.getElementById("downloadProcessedBtn").classList.add("hidden");
+
+    // Go back to step 2 (language selection)
+    this.showStep(2);
   }
 
   showStatus(message) {
