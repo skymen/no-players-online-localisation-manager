@@ -20,6 +20,7 @@ class LocalisationManager {
     this.uploadedData = null;
     this.processedData = null;
     this.serverFiles = null;
+    this.lqaDifferences = []; // Track LQA differences for review
     this.isValidatingServerFile = false; // Track if we're validating server file
     this.init();
   }
@@ -36,6 +37,9 @@ class LocalisationManager {
     document
       .getElementById("languageSelect")
       .addEventListener("change", (e) => this.onLanguageChange(e));
+    document
+      .getElementById("lqaCheckbox")
+      .addEventListener("change", (e) => this.onLqaCheckboxChange(e));
     document
       .getElementById("downloadLatestBtn")
       .addEventListener("click", (e) => {
@@ -54,6 +58,17 @@ class LocalisationManager {
     document
       .getElementById("tutorialToggle")
       .addEventListener("click", () => this.toggleTutorial());
+
+    // LQA event listeners
+    document
+      .getElementById("acceptAllLQABtn")
+      .addEventListener("click", () => this.acceptAllLQASuggestions());
+    document
+      .getElementById("rejectAllLQABtn")
+      .addEventListener("click", () => this.rejectAllLQASuggestions());
+    document
+      .getElementById("continueLQABtn")
+      .addEventListener("click", () => this.continueFromLQA());
 
     // Set up drag and drop
     this.setupDragAndDrop();
@@ -95,6 +110,62 @@ class LocalisationManager {
         select.appendChild(option);
       }
     });
+
+    // Restore saved state
+    this.restoreState();
+  }
+
+  saveState() {
+    const state = {
+      selectedLanguage: this.selectedLanguage,
+      isLqaFile: document.getElementById("lqaCheckbox").checked,
+    };
+    localStorage.setItem("localisationManagerState", JSON.stringify(state));
+  }
+
+  restoreState() {
+    try {
+      const savedState = localStorage.getItem("localisationManagerState");
+      if (savedState) {
+        const state = JSON.parse(savedState);
+
+        // Restore language selection
+        if (
+          state.selectedLanguage &&
+          this.availableLanguages.includes(state.selectedLanguage)
+        ) {
+          document.getElementById("languageSelect").value =
+            state.selectedLanguage;
+          this.selectedLanguage = state.selectedLanguage;
+        }
+
+        // Restore LQA checkbox
+        if (state.isLqaFile !== undefined) {
+          document.getElementById("lqaCheckbox").checked = state.isLqaFile;
+        }
+
+        // Trigger language change to show the appropriate UI elements
+        if (this.selectedLanguage) {
+          this.onLanguageChange({ target: { value: this.selectedLanguage } });
+        }
+      }
+    } catch (error) {
+      console.error("Error restoring state:", error);
+    }
+  }
+
+  onLqaCheckboxChange(e) {
+    this.saveState();
+
+    // If a language is selected, reload server files with the new file ID
+    if (this.selectedLanguage) {
+      this.loadServerFiles();
+    }
+  }
+
+  getFileId() {
+    const isLqaFile = document.getElementById("lqaCheckbox").checked;
+    return isLqaFile ? `LQA_${this.selectedLanguage}` : this.selectedLanguage;
   }
 
   onLanguageChange(e) {
@@ -106,6 +177,9 @@ class LocalisationManager {
       document.getElementById("selectedLanguageName").textContent =
         this.selectedLanguage;
 
+      // Save state
+      this.saveState();
+
       // Show actions area and drop zone
       actionsArea.classList.remove("hidden");
       dropZone.classList.remove("hidden");
@@ -114,6 +188,9 @@ class LocalisationManager {
       this.loadServerFiles();
     } else {
       this.selectedLanguage = null;
+
+      // Save state
+      this.saveState();
 
       // Hide actions area and drop zone
       actionsArea.classList.add("hidden");
@@ -126,7 +203,8 @@ class LocalisationManager {
     const serverFilesContent = document.getElementById("serverFilesContent");
 
     try {
-      const result = await this.getServerFiles(this.selectedLanguage);
+      const fileId = this.getFileId();
+      const result = await this.getServerFiles(fileId);
       this.serverFiles = result.backups || [];
 
       if (this.serverFiles.length === 0) {
@@ -176,6 +254,7 @@ class LocalisationManager {
   generateServerFileHTML(file, isCurrent) {
     const versionText = isCurrent ? "Current" : `Backup ${file.version}`;
     const sizeKB = Math.round(file.size / 1024);
+    const fileId = this.getFileId();
 
     return `
       <div class="server-file-item">
@@ -191,9 +270,9 @@ class LocalisationManager {
           }
         </div>
         <div class="server-file-actions">
-          <button class="server-file-btn" onclick="window.localisationManager.downloadServerFileToUser('${
-            this.selectedLanguage
-          }', '${file.version}')">
+          <button class="server-file-btn" onclick="window.localisationManager.downloadServerFileToUser('${fileId}', '${
+      file.version
+    }')">
             Download
           </button>
           ${
@@ -212,7 +291,8 @@ class LocalisationManager {
 
   async checkCurrentFileMergeStatus() {
     try {
-      const csvContent = await this.downloadServerFile(this.selectedLanguage);
+      const fileId = this.getFileId();
+      const csvContent = await this.downloadServerFile(fileId);
       const serverData = parseCSV(csvContent);
       const mergeStatus = await this.checkMergeStatus(
         serverData,
@@ -328,12 +408,442 @@ class LocalisationManager {
 
       const csvText = await this.readFileAsText(file);
       this.uploadedData = parseCSV(csvText);
-      const report = this.compareAndGenerateReport();
-      this.displayReport(report);
-      this.showStep(3);
-      this.hideStatus();
+
+      // Check for LQA comparison if not in LQA mode
+      const isLqaMode = document.getElementById("lqaCheckbox").checked;
+      if (!isLqaMode) {
+        const lqaDifferences = await this.checkForLQADifferences();
+        if (lqaDifferences.length > 0) {
+          this.lqaDifferences = lqaDifferences;
+          this.showLQADifferencesStep();
+          return;
+        }
+      }
+
+      // Proceed with normal report generation
+      this.generateAndShowReport();
     } catch (error) {
       this.showStatus(`Error processing file: ${error.message}`);
+    }
+  }
+
+  generateAndShowReport() {
+    const report = this.compareAndGenerateReport();
+    this.displayReport(report);
+    this.showStep(3);
+    this.hideStatus();
+  }
+
+  async checkForLQADifferences() {
+    try {
+      const lqaFileId = `LQA_${this.selectedLanguage}`;
+      const lqaCsvContent = await this.downloadServerFile(lqaFileId);
+      const lqaData = parseCSV(lqaCsvContent);
+
+      // Create maps for easier comparison
+      const userDataMap = {};
+      this.uploadedData.forEach((row) => {
+        if (row.termID) {
+          userDataMap[row.termID] = row;
+        }
+      });
+
+      const lqaDataMap = {};
+      lqaData.forEach((row) => {
+        if (row.termID) {
+          lqaDataMap[row.termID] = row;
+        }
+      });
+
+      const differences = [];
+
+      // Compare LQA data with user data
+      Object.keys(lqaDataMap).forEach((termID) => {
+        const lqaRow = lqaDataMap[termID];
+        const userRow = userDataMap[termID];
+        const lqaTranslation = lqaRow[this.selectedLanguage] || "";
+        const userTranslation = userRow
+          ? userRow[this.selectedLanguage] || ""
+          : "";
+
+        // Check if LQA has a non-empty value that's different from user's value
+        if (lqaTranslation.trim() && lqaTranslation !== userTranslation) {
+          differences.push({
+            termID: termID,
+            english: lqaRow.English || "",
+            userTranslation: userTranslation,
+            lqaTranslation: lqaTranslation,
+            notes: lqaRow.notes || "",
+          });
+        }
+      });
+
+      return differences;
+    } catch (error) {
+      // If LQA file doesn't exist or can't be fetched, return empty array
+      console.log("No LQA file found or error fetching LQA file:", error);
+      return [];
+    }
+  }
+
+  showLQADifferencesStep() {
+    const lqaHeader = document.getElementById("lqaHeader");
+    const lqaContent = document.getElementById("lqaContent");
+
+    lqaHeader.textContent = `LQA Suggestions Found for ${this.selectedLanguage}`;
+
+    let html = '<div class="lqa-suggestions-container">';
+
+    this.lqaDifferences.forEach((diff, index) => {
+      html += this.generateLQASuggestionHTML(diff, index);
+    });
+
+    html += "</div>";
+    lqaContent.innerHTML = html;
+
+    // Initialize the continue button state
+    this.checkLQACompletion();
+
+    this.showStep("LQA");
+    this.hideStatus();
+  }
+
+  generateLQASuggestionHTML(diff, index) {
+    // Use existing diff system to compare translations
+    const diffSummary = getDiffSummary(
+      diff.userTranslation || "",
+      diff.lqaTranslation || ""
+    );
+
+    // Determine if multiline for diff rendering
+    const isMultiline =
+      (diff.userTranslation || "").includes("\n") ||
+      (diff.lqaTranslation || "").includes("\n");
+
+    let diffContent = "";
+
+    if (isMultiline) {
+      // For multiline: Use enhanced diff
+      const enhancedDiff = generateEnhancedLineDiff(
+        diff.userTranslation || "",
+        diff.lqaTranslation || ""
+      );
+      const enhancedHTML = this.generateEnhancedDiffHTML(enhancedDiff);
+
+      diffContent = `
+        <div class="diff-container">
+          ${enhancedHTML}
+        </div>
+      `;
+    } else {
+      // For single-line: Use character diff
+      const charDiff = generateCharDiff(
+        diff.userTranslation || "",
+        diff.lqaTranslation || ""
+      );
+      const charDiffHTML = this.generateCharDiffHTML(charDiff);
+
+      diffContent = `
+        <div class="diff-container">
+          ${charDiffHTML}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="lqa-suggestion" id="lqa-suggestion-${index}">
+        <div class="lqa-suggestion-header" onclick="window.localisationManager.toggleLQASuggestion(${index})">
+          <div style="display: flex; align-items: center;">
+            <div class="lqa-term-id">${diff.termID}</div>
+            <div class="lqa-header-summary" id="lqa-header-summary-${index}"></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="lqa-status" id="lqa-status-${index}" style="display: none;"></div>
+            <span class="lqa-expand-icon">▼</span>
+          </div>
+        </div>
+        
+        <div class="lqa-content">
+          <div class="lqa-english-label">English Text:</div>
+          <div class="lqa-english">${this.escapeHtml(diff.english)}</div>
+          
+          <div class="diff-summary" style="margin: 1rem 0;">
+            ${diffSummary.message}
+          </div>
+          
+          <div class="diff-header">
+            <span class="diff-label">Translation Changes</span>
+            <div class="copy-buttons">
+              <button class="copy-btn" onclick="copyToClipboard(\`${this.escapeForAttribute(
+                diff.userTranslation || ""
+              )}\`, 'old', this)" title="Copy your translation">
+                📋 Copy Yours
+              </button>
+              <button class="copy-btn" onclick="copyToClipboard(\`${this.escapeForAttribute(
+                diff.lqaTranslation || ""
+              )}\`, 'new', this)" title="Copy LQA suggestion">
+                📋 Copy LQA
+              </button>
+            </div>
+          </div>
+          
+          ${diffContent}
+          
+          ${
+            diff.notes
+              ? `<div class="lqa-notes" style="margin-top: 1rem; padding: 0.5rem; background: var(--secondary-bg); border-radius: 4px;"><strong>Notes:</strong> ${this.escapeHtml(
+                  diff.notes
+                )}</div>`
+              : ""
+          }
+          
+          <div class="lqa-actions">
+            <button class="lqa-btn lqa-btn-accept" onclick="window.localisationManager.acceptLQASuggestion(${index})">
+              ✓ Accept LQA Suggestion
+            </button>
+            <button class="lqa-btn lqa-btn-reject" onclick="window.localisationManager.rejectLQASuggestion(${index})">
+              ✗ Keep Your Translation
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  toggleLQASuggestion(index) {
+    const suggestionElement = document.getElementById(
+      `lqa-suggestion-${index}`
+    );
+    suggestionElement.classList.toggle("collapsed");
+  }
+
+  acceptLQASuggestion(index) {
+    const diff = this.lqaDifferences[index];
+    const suggestionElement = document.getElementById(
+      `lqa-suggestion-${index}`
+    );
+    const statusElement = document.getElementById(`lqa-status-${index}`);
+    const headerSummary = document.getElementById(
+      `lqa-header-summary-${index}`
+    );
+    const actionsElement = suggestionElement.querySelector(".lqa-actions");
+
+    // Mark as accepted
+    diff.status = "accepted";
+    suggestionElement.classList.add("accepted");
+    suggestionElement.classList.add("collapsed");
+
+    // Update the user data with the LQA suggestion
+    const userDataMap = {};
+    this.uploadedData.forEach((row) => {
+      if (row.termID) {
+        userDataMap[row.termID] = row;
+      }
+    });
+
+    if (userDataMap[diff.termID]) {
+      userDataMap[diff.termID][this.selectedLanguage] = diff.lqaTranslation;
+    } else {
+      // Create new row if it doesn't exist
+      const newRow = {
+        termID: diff.termID,
+        English: diff.english,
+        notes: diff.notes,
+        shouldBeTranslated: "TRUE",
+        translationNeedsToBeUpdated: "FALSE",
+      };
+      newRow[this.selectedLanguage] = diff.lqaTranslation;
+      this.uploadedData.push(newRow);
+    }
+
+    // Update UI
+    statusElement.textContent = "Accepted";
+    statusElement.className = "lqa-status accepted";
+    statusElement.style.display = "block";
+    headerSummary.textContent = "LQA suggestion accepted";
+
+    // Allow changing decision
+    actionsElement.innerHTML = `
+      <button class="lqa-btn" onclick="window.localisationManager.changeLQADecision(${index})" style="background: var(--accent-color);">
+        Change Decision
+      </button>
+    `;
+
+    this.checkLQACompletion();
+  }
+
+  rejectLQASuggestion(index) {
+    const diff = this.lqaDifferences[index];
+    const suggestionElement = document.getElementById(
+      `lqa-suggestion-${index}`
+    );
+    const statusElement = document.getElementById(`lqa-status-${index}`);
+    const headerSummary = document.getElementById(
+      `lqa-header-summary-${index}`
+    );
+    const actionsElement = suggestionElement.querySelector(".lqa-actions");
+
+    // Mark as rejected
+    diff.status = "rejected";
+    suggestionElement.classList.add("rejected");
+    suggestionElement.classList.add("collapsed");
+
+    // Update UI
+    statusElement.textContent = "Rejected";
+    statusElement.className = "lqa-status rejected";
+    statusElement.style.display = "block";
+    headerSummary.textContent = "Your translation kept";
+
+    // Allow changing decision
+    actionsElement.innerHTML = `
+      <button class="lqa-btn" onclick="window.localisationManager.changeLQADecision(${index})" style="background: var(--accent-color);">
+        Change Decision
+      </button>
+    `;
+
+    this.checkLQACompletion();
+  }
+
+  changeLQADecision(index) {
+    const diff = this.lqaDifferences[index];
+    const suggestionElement = document.getElementById(
+      `lqa-suggestion-${index}`
+    );
+    const statusElement = document.getElementById(`lqa-status-${index}`);
+    const headerSummary = document.getElementById(
+      `lqa-header-summary-${index}`
+    );
+    const actionsElement = suggestionElement.querySelector(".lqa-actions");
+
+    // Store previous status for data reversion
+    const previousStatus = diff.status;
+
+    // Reset status
+    diff.status = null;
+    suggestionElement.classList.remove("accepted", "rejected", "collapsed");
+    statusElement.style.display = "none";
+    headerSummary.textContent = "";
+
+    // Restore original action buttons
+    actionsElement.innerHTML = `
+      <button class="lqa-btn lqa-btn-accept" onclick="window.localisationManager.acceptLQASuggestion(${index})">
+        ✓ Accept LQA Suggestion
+      </button>
+      <button class="lqa-btn lqa-btn-reject" onclick="window.localisationManager.rejectLQASuggestion(${index})">
+        ✗ Keep Your Translation
+      </button>
+    `;
+
+    // If it was accepted, revert the data change
+    if (previousStatus === "accepted") {
+      const userDataMap = {};
+      this.uploadedData.forEach((row) => {
+        if (row.termID) {
+          userDataMap[row.termID] = row;
+        }
+      });
+
+      if (userDataMap[diff.termID]) {
+        userDataMap[diff.termID][this.selectedLanguage] =
+          diff.userTranslation || "";
+      }
+    }
+
+    this.checkLQACompletion();
+  }
+
+  checkLQACompletion() {
+    const unprocessedDiffs = this.lqaDifferences.filter((diff) => !diff.status);
+    const continueBtn = document.getElementById("continueLQABtn");
+    const acceptAllBtn = document.getElementById("acceptAllLQABtn");
+    const rejectAllBtn = document.getElementById("rejectAllLQABtn");
+
+    // Update continue button
+    if (unprocessedDiffs.length === 0) {
+      continueBtn.textContent = "✓ Continue to Report";
+      continueBtn.classList.add("btn-link");
+      continueBtn.disabled = false;
+    } else {
+      continueBtn.textContent = `Continue to Report (${unprocessedDiffs.length} pending)`;
+      continueBtn.classList.remove("btn-link");
+      continueBtn.disabled = true;
+    }
+
+    // Update accept all and reject all buttons
+    if (unprocessedDiffs.length === 0) {
+      acceptAllBtn.textContent = "✓ Accept All (0)";
+      acceptAllBtn.disabled = true;
+      rejectAllBtn.textContent = "✗ Reject All (0)";
+      rejectAllBtn.disabled = true;
+    } else {
+      acceptAllBtn.textContent = `✓ Accept All (${unprocessedDiffs.length})`;
+      acceptAllBtn.disabled = false;
+      rejectAllBtn.textContent = `✗ Reject All (${unprocessedDiffs.length})`;
+      rejectAllBtn.disabled = false;
+    }
+  }
+
+  acceptAllLQASuggestions() {
+    this.lqaDifferences.forEach((diff, index) => {
+      if (!diff.status) {
+        this.acceptLQASuggestion(index);
+      }
+    });
+  }
+
+  rejectAllLQASuggestions() {
+    this.lqaDifferences.forEach((diff, index) => {
+      if (!diff.status) {
+        this.rejectLQASuggestion(index);
+      }
+    });
+  }
+
+  continueFromLQA() {
+    // Check if we're validating a server file and if any LQA suggestions were accepted
+    if (this.isValidatingServerFile) {
+      const acceptedSuggestions = this.lqaDifferences.filter(
+        (diff) => diff.status === "accepted"
+      );
+
+      if (acceptedSuggestions.length > 0) {
+        // Upload the updated file back to server since LQA suggestions were accepted
+        this.uploadUpdatedServerFile();
+        return;
+      }
+    }
+
+    // Proceed with normal report generation using the updated data
+    this.generateAndShowReport();
+  }
+
+  async uploadUpdatedServerFile() {
+    try {
+      this.showStatus("Uploading updated file to server...");
+
+      // Generate CSV from the updated uploadedData (which contains LQA changes)
+      const csv = generateLocalizationCSV(this.uploadedData, [
+        this.selectedLanguage,
+      ]);
+      const fileId = this.getFileId();
+      await this.uploadToServer(csv, fileId);
+
+      this.showStatus("✅ File updated successfully! Generating report...");
+
+      // Small delay to show success message, then proceed with report
+      setTimeout(() => {
+        this.generateAndShowReport();
+      }, 1000);
+    } catch (error) {
+      console.error("Failed to upload updated server file:", error);
+      this.showStatus(
+        `❌ Upload failed: ${error.message}. Continuing with report...`
+      );
+
+      // Continue with report even if upload failed
+      setTimeout(() => {
+        this.generateAndShowReport();
+      }, 2000);
     }
   }
 
@@ -386,7 +896,7 @@ class LocalisationManager {
       this.uploadedData = parseCSV(csvText);
       const report = this.compareAndGenerateReport();
       this.displayReport(report);
-      this.showStep(4);
+      this.showStep(3);
       this.hideStatus();
     } catch (error) {
       this.showStatus(`Error processing file: ${error.message}`);
@@ -577,6 +1087,7 @@ class LocalisationManager {
           report.totalMissingTermsFoundInLatest
         }</strong> missing terms that were found in latest file</p>
         <p><strong>${report.totalNeedsUpdate}</strong> terms need updates</p>
+        <div id="upload-status" style="margin-top: 1rem;"></div>
         
         ${
           report.totalNeedsTranslation > 0
@@ -635,6 +1146,11 @@ class LocalisationManager {
 
     reportContent.innerHTML = html;
     document.getElementById("downloadProcessedBtn").classList.remove("hidden");
+
+    // Auto-upload incomplete files for user uploads (not server file validations)
+    if (!this.isValidatingServerFile) {
+      this.autoUploadToServer();
+    }
   }
 
   async autoUploadToServer() {
@@ -645,7 +1161,8 @@ class LocalisationManager {
         '<p style="color: var(--link-color);">📤 Uploading to server...</p>';
 
       const csv = this.generateProcessedCSV();
-      await this.uploadToServer(csv, this.selectedLanguage);
+      const fileId = this.getFileId();
+      await this.uploadToServer(csv, fileId);
 
       uploadStatus.innerHTML =
         '<p style="color: #4CAF50;">✅ Successfully uploaded to server!</p>';
@@ -886,6 +1403,7 @@ class LocalisationManager {
     // Clear any uploaded data and processed data
     this.uploadedData = null;
     this.processedData = null;
+    this.lqaDifferences = []; // Clear LQA differences
 
     // Reset file input
     document.getElementById("fileInput").value = "";
@@ -914,7 +1432,7 @@ class LocalisationManager {
   }
 
   // Global methods for onclick handlers
-  async downloadServerFileToUser(languageName, version) {
+  async downloadServerFileToUser(fileId, version) {
     try {
       this.showStatus(
         `Downloading ${
@@ -922,11 +1440,11 @@ class LocalisationManager {
         } file...`
       );
 
-      const csvContent = await this.downloadServerFile(languageName, version);
+      const csvContent = await this.downloadServerFile(fileId, version);
       const filename =
         version === "current"
-          ? `${languageName}_server_current.csv`
-          : `${languageName}_server_backup_${version}.csv`;
+          ? `${fileId}_server_current.csv`
+          : `${fileId}_server_backup_${version}.csv`;
 
       this.downloadFile(csvContent, filename);
       this.hideStatus();
@@ -942,10 +1460,25 @@ class LocalisationManager {
       // Set flag to indicate we're validating a server file
       this.isValidatingServerFile = true;
 
-      const validation = await this.validateServerFile(this.selectedLanguage);
+      const fileId = this.getFileId();
+      const validation = await this.validateServerFile(fileId);
 
       // Set the uploaded data to the server data for comparison
       this.uploadedData = parseCSV(validation.csvContent);
+
+      // Check for LQA comparison if not in LQA mode
+      const isLqaMode = document.getElementById("lqaCheckbox").checked;
+      if (!isLqaMode) {
+        const lqaDifferences = await this.checkForLQADifferences();
+        if (lqaDifferences.length > 0) {
+          this.lqaDifferences = lqaDifferences;
+          this.showLQADifferencesStep();
+          // Update header to indicate this is server file validation with LQA
+          const lqaHeader = document.getElementById("lqaHeader");
+          lqaHeader.textContent = `LQA Suggestions Found for Server File (${this.selectedLanguage})`;
+          return;
+        }
+      }
 
       // Display the report
       this.displayReport(validation.report);
@@ -977,15 +1510,15 @@ class LocalisationManager {
   }
 
   // Server communication methods
-  async uploadToServer(csvContent, languageName) {
+  async uploadToServer(csvContent, fileId) {
     const formData = new FormData();
     const blob = new Blob([csvContent], { type: "text/csv" });
-    formData.append("file", blob, `${languageName}.csv`);
+    formData.append("file", blob, `${fileId}.csv`);
 
     try {
       const response = await fetch(
         `${CONFIG.PHP_SERVER_URL}?action=upload&id=${encodeURIComponent(
-          languageName
+          fileId
         )}`,
         {
           method: "POST",
@@ -1009,11 +1542,11 @@ class LocalisationManager {
     }
   }
 
-  async getServerFiles(languageName) {
+  async getServerFiles(fileId) {
     try {
       const response = await fetch(
         `${CONFIG.PHP_SERVER_URL}?action=backups&id=${encodeURIComponent(
-          languageName
+          fileId
         )}`
       );
 
@@ -1033,15 +1566,15 @@ class LocalisationManager {
     }
   }
 
-  async downloadServerFile(languageName, version = "current") {
+  async downloadServerFile(fileId, version = "current") {
     try {
       const url =
         version === "current"
           ? `${CONFIG.PHP_SERVER_URL}?action=data&id=${encodeURIComponent(
-              languageName
+              fileId
             )}`
           : `${CONFIG.PHP_SERVER_URL}?action=data&id=${encodeURIComponent(
-              languageName
+              fileId
             )}&version=${version}`;
 
       const response = await fetch(url);
@@ -1057,9 +1590,9 @@ class LocalisationManager {
     }
   }
 
-  async validateServerFile(languageName) {
+  async validateServerFile(fileId) {
     try {
-      const csvContent = await this.downloadServerFile(languageName);
+      const csvContent = await this.downloadServerFile(fileId);
       const serverData = parseCSV(csvContent);
 
       // Process the server file like a user upload
@@ -1067,7 +1600,10 @@ class LocalisationManager {
       const report = this.compareAndGenerateReport();
 
       // Check if server file has been merged
-      const mergeStatus = await this.checkMergeStatus(serverData, languageName);
+      const mergeStatus = await this.checkMergeStatus(
+        serverData,
+        this.selectedLanguage
+      );
 
       return {
         report,
@@ -1130,7 +1666,8 @@ class LocalisationManager {
       step.classList.remove("active");
     });
 
-    document.getElementById(`step${stepNumber}`).classList.add("active");
+    const stepId = stepNumber === "LQA" ? "stepLQA" : `step${stepNumber}`;
+    document.getElementById(stepId).classList.add("active");
   }
 }
 

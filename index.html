@@ -642,6 +642,180 @@
         color: var(--text-color);
         opacity: 0.8;
       }
+
+      /* LQA Suggestions Styles */
+      .lqa-suggestion {
+        background: var(--secondary-bg);
+        border: 1px solid var(--accent-color);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        position: relative;
+      }
+
+      .lqa-suggestion.accepted {
+        border-color: #4caf50;
+        background: rgba(76, 175, 80, 0.1);
+      }
+
+      .lqa-suggestion.rejected {
+        border-color: #f44336;
+        background: rgba(244, 67, 54, 0.1);
+      }
+
+      .lqa-term-id {
+        font-weight: 600;
+        color: var(--link-color);
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+
+      .lqa-english {
+        background: var(--bg-color);
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        font-size: 13px;
+        border: 1px solid var(--accent-color);
+      }
+
+      .lqa-english-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--link-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+      }
+
+      .lqa-translation-comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .lqa-translation-box {
+        background: var(--bg-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 4px;
+        padding: 8px;
+        font-size: 13px;
+      }
+
+      .lqa-translation-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+      }
+
+      .lqa-user-translation .lqa-translation-label {
+        color: #ff9800;
+      }
+
+      .lqa-lqa-translation .lqa-translation-label {
+        color: var(--link-color);
+      }
+
+      .lqa-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .lqa-btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 500;
+        color: white;
+      }
+
+      .lqa-btn-accept {
+        background: #4caf50;
+        color: white;
+      }
+
+      .lqa-btn-accept:hover {
+        background: #45a049;
+      }
+
+      .lqa-btn-reject {
+        background: #f44336;
+        color: white;
+      }
+
+      .lqa-btn-reject:hover {
+        background: #da190b;
+      }
+
+      .lqa-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .lqa-status {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 3px;
+        margin-left: auto;
+      }
+
+      .lqa-status.accepted {
+        background: #4caf50;
+        color: white;
+      }
+
+      .lqa-status.rejected {
+        background: #f44336;
+        color: white;
+      }
+
+      /* Collapsible LQA suggestions */
+      .lqa-suggestion.collapsed .lqa-content {
+        display: none;
+      }
+      .lqa-suggestion.collapsed {
+        padding: 4px 16px;
+      }
+
+      .lqa-suggestion-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--accent-color);
+        margin-bottom: 12px;
+      }
+
+      .lqa-suggestion.collapsed .lqa-suggestion-header {
+        margin-bottom: 0;
+        border-bottom: none;
+      }
+
+      .lqa-expand-icon {
+        transition: transform 0.3s ease;
+        font-size: 14px;
+        color: var(--link-color);
+      }
+
+      .lqa-suggestion.collapsed .lqa-expand-icon {
+        transform: rotate(-90deg);
+      }
+
+      .lqa-header-summary {
+        font-size: 12px;
+        color: var(--text-color);
+        opacity: 0.7;
+        margin-left: 12px;
+      }
     </style>
   </head>
   <body>
@@ -671,6 +845,24 @@
           <option value="">Select a language...</option>
         </select>
 
+        <div class="form-group" style="margin-top: 1rem">
+          <label
+            style="
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              cursor: pointer;
+            "
+          >
+            <input
+              type="checkbox"
+              id="lqaCheckbox"
+              style="width: auto; margin: 0"
+            />
+            <span>LQA file</span>
+          </label>
+        </div>
+
         <div class="actions-area hidden" id="actionsArea">
           <a href="#" class="download-link" id="downloadLatestBtn">
             Download latest version for
@@ -695,6 +887,22 @@
             <p>Drop your CSV file here to validate</p>
             <p class="drop-zone-subtitle">or click here to browse for a file</p>
           </div>
+        </div>
+      </div>
+
+      <div class="step" id="stepLQA">
+        <h3 id="lqaHeader">LQA Suggestions Found</h3>
+        <p>
+          We found suggestions from the LQA file that differ from your
+          translations. Please review and accept or reject each change:
+        </p>
+        <div id="lqaContent"></div>
+        <div class="report-actions">
+          <button class="btn" id="acceptAllLQABtn">✓ Accept All</button>
+          <button class="btn" id="rejectAllLQABtn">✗ Reject All</button>
+          <button class="btn btn-link" id="continueLQABtn">
+            Continue to Report
+          </button>
         </div>
       </div>
 
@@ -729,9 +937,9 @@
         <div class="tutorial-step">
           <h4>2. Download Latest Version (Optional)</h4>
           <p>
-            Before starting, you can download the latest version of the
-            translation file to see what's already been translated and what
-            needs work.
+            If you haven't already started working on it, you can download the
+            latest version of the translation file to see what's already been
+            translated and what needs work.
           </p>
         </div>
 
@@ -748,6 +956,13 @@
               file picker
             </li>
           </ul>
+          <br />
+
+          <h4>Make sure to use CSV</h4>
+          <p>
+            If you were working in Google Sheets, Excel or any other format,
+            make sure to export the localisation sheet to CSV
+          </p>
         </div>
 
         <div class="tutorial-step">
@@ -802,8 +1017,8 @@
         <div class="tutorial-step">
           <h4>6. Congratulations!</h4>
           <p>
-            Once the report says everything is good, you can send the updated
-            file to the development team for integration into the game.
+            Once the report says everything is good, the file is automatically
+            uploaded to the server.
           </p>
         </div>
       </div>

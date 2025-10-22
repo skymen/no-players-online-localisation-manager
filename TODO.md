@@ -1,0 +1,3 @@
+- Add better tutorial for backend + what you need to do depending on if the tool says you're good to go or not
+- Add a menu to delete files from the server
+- Admin panel LQA support
