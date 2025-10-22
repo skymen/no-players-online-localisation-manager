@@ -57,6 +57,14 @@ class AdminManager {
     document
       .getElementById("mergeAllLQABtn")
       .addEventListener("click", () => this.mergeAllUnmergedLQAFiles());
+
+    // File Manager event listeners
+    document
+      .getElementById("refreshFilesBtn")
+      .addEventListener("click", () => this.loadServerFiles());
+    document
+      .getElementById("deleteAllFilesBtn")
+      .addEventListener("click", () => this.deleteAllFiles());
   }
 
   setupBeforeUnloadWarning() {
@@ -1498,6 +1506,207 @@ class AdminManager {
   hideStatus() {
     document.getElementById("status").classList.add("hidden");
   }
+
+  // File Manager Methods
+  async loadServerFiles() {
+    try {
+      this.showStatus("Loading server files...");
+
+      const response = await fetch(`${CONFIG.PHP_SERVER_URL}?action=list_all`);
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to load files");
+      }
+
+      this.displayServerFiles(result.ids);
+      this.hideStatus();
+    } catch (error) {
+      this.showStatus(`Error loading files: ${error.message}`);
+      console.error("File loading error:", error);
+    }
+  }
+
+  displayServerFiles(files) {
+    const loadingElement = document.getElementById("fileManagerLoading");
+    const contentElement = document.getElementById("fileManagerContent");
+    const noFilesElement = document.getElementById("noFilesMessage");
+    const filesListElement = document.getElementById("filesList");
+
+    loadingElement.classList.add("hidden");
+
+    if (files.length === 0) {
+      contentElement.classList.add("hidden");
+      noFilesElement.classList.remove("hidden");
+      return;
+    }
+
+    noFilesElement.classList.add("hidden");
+    contentElement.classList.remove("hidden");
+
+    // Update summary stats
+    const totalFiles = files.reduce((sum, file) => sum + file.fileCount, 0);
+    const totalSize = files.reduce((sum, file) => sum + file.totalSize, 0);
+
+    document.getElementById("totalIDsCount").textContent = files.length;
+    document.getElementById("totalFilesCount").textContent = totalFiles;
+    document.getElementById("totalSizeDisplay").textContent =
+      this.formatFileSize(totalSize);
+
+    // Generate files list HTML
+    const filesHTML = files
+      .map((file) => this.generateFileItemHTML(file))
+      .join("");
+    filesListElement.innerHTML = filesHTML;
+  }
+
+  generateFileItemHTML(file) {
+    const lastModified = file.lastModified
+      ? new Date(file.lastModified).toLocaleString()
+      : "Unknown";
+
+    return `
+      <div class="file-item">
+        <div class="file-item-header">
+          <div>
+            <div class="file-id">${file.id}</div>
+            <div class="file-stats">
+              <span>${file.fileCount} files</span>
+              <span>${this.formatFileSize(file.totalSize)}</span>
+              <span>Last: ${lastModified}</span>
+            </div>
+          </div>
+          <div class="file-actions">
+            <a href="${
+              CONFIG.PHP_SERVER_URL
+            }?action=data&id=${encodeURIComponent(file.id)}" 
+               class="file-btn primary" target="_blank">
+              📄 Current
+            </a>
+            <a href="${
+              CONFIG.PHP_SERVER_URL
+            }?action=download_zip&id=${encodeURIComponent(file.id)}" 
+               class="file-btn primary">
+              📦 Download ZIP
+            </a>
+            <button class="file-btn danger" onclick="window.adminManager.deleteFile('${
+              file.id
+            }')">
+              🗑️ Delete
+            </button>
+          </div>
+        </div>
+        <div class="file-metadata">
+          <button class="metadata-toggle" id="metadata-toggle-${file.id}" 
+                  onclick="toggleMetadata('${file.id}')">
+            ▶ Show Metadata
+          </button>
+          <div class="metadata-content" id="metadata-content-${file.id}">
+${JSON.stringify(file.metadata, null, 2)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  formatFileSize(bytes) {
+    if (bytes === 0) return "0 bytes";
+    const k = 1024;
+    const sizes = ["bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  }
+
+  async deleteFile(id) {
+    if (
+      !confirm(
+        `Are you sure you want to delete all files for "${id}"? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      this.showStatus(`Deleting ${id}...`);
+
+      const formData = new FormData();
+      const response = await fetch(
+        `${CONFIG.PHP_SERVER_URL}?action=delete&id=${encodeURIComponent(id)}`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to delete file");
+      }
+
+      this.showStatus(`Successfully deleted ${id}`);
+      setTimeout(() => {
+        this.hideStatus();
+        this.loadServerFiles(); // Refresh the list
+      }, 1500);
+    } catch (error) {
+      this.showStatus(`Error deleting file: ${error.message}`);
+    }
+  }
+
+  async deleteAllFiles() {
+    if (
+      !confirm(
+        "Are you sure you want to delete ALL files from the server? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    if (
+      !confirm(
+        "This will permanently delete all translation files. Are you absolutely sure?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      this.showStatus("Deleting all files...");
+
+      const formData = new FormData();
+      const response = await fetch(
+        `${CONFIG.PHP_SERVER_URL}?action=delete_all`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to delete files");
+      }
+
+      this.showStatus(`Successfully deleted all files: ${result.message}`);
+      setTimeout(() => {
+        this.hideStatus();
+        this.loadServerFiles(); // Refresh the list
+      }, 2000);
+    } catch (error) {
+      this.showStatus(`Error deleting files: ${error.message}`);
+    }
+  }
 }
 
 // Global functions for onclick events
@@ -1550,5 +1759,5 @@ window.showMissingTerms = function (language, missingTerms) {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  new AdminManager();
+  window.adminManager = new AdminManager();
 });

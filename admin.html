@@ -576,6 +576,194 @@
       .server-file-btn.merge {
         background: var(--button-bg);
       }
+
+      /* Navigation Tabs */
+      .nav-tabs {
+        display: flex;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid var(--accent-color);
+      }
+
+      .tab-btn {
+        padding: 1rem 2rem;
+        background: transparent;
+        color: var(--text-color);
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        border-radius: 0;
+      }
+
+      .tab-btn:hover {
+        background: var(--secondary-bg);
+        opacity: 1;
+      }
+
+      .tab-btn.active {
+        color: var(--link-color);
+        border-bottom-color: var(--link-color);
+        background: var(--secondary-bg);
+      }
+
+      /* Tab Content */
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      /* File Manager Styles */
+      .file-manager-controls {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        align-items: center;
+      }
+
+      .files-summary {
+        background: var(--secondary-bg);
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--accent-color);
+      }
+
+      .summary-stats {
+        display: flex;
+        gap: 2rem;
+        font-size: 0.9rem;
+        color: var(--text-color);
+      }
+
+      .summary-stats span {
+        font-weight: 600;
+      }
+
+      .files-list {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .file-item {
+        background: var(--secondary-bg);
+        border: 1px solid var(--accent-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        transition: border-color 0.3s ease;
+      }
+
+      .file-item:hover {
+        border-color: var(--link-color);
+      }
+
+      .file-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .file-id {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--link-color);
+        margin-bottom: 0.5rem;
+      }
+
+      .file-stats {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.9rem;
+        color: var(--text-color);
+        opacity: 0.8;
+      }
+
+      .file-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .file-btn {
+        padding: 0.5rem 1rem;
+        background: var(--accent-color);
+        color: var(--text-color);
+        border: none;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+      }
+
+      .file-btn:hover {
+        opacity: 0.8;
+        color: var(--text-color);
+        text-decoration: none;
+      }
+
+      .file-btn.danger {
+        background: #dc3545;
+      }
+
+      .file-btn.primary {
+        background: var(--button-bg);
+      }
+
+      .file-metadata {
+        margin-top: 1rem;
+      }
+
+      .metadata-toggle {
+        background: var(--bg-color);
+        color: var(--text-color);
+        border: 1px solid var(--accent-color);
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        width: 100%;
+        text-align: left;
+      }
+
+      .metadata-content {
+        display: none;
+        background: var(--bg-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 4px;
+        padding: 1rem;
+        font-family: monospace;
+        font-size: 0.8rem;
+        max-height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+      }
+
+      .metadata-content.show {
+        display: block;
+      }
+
+      .loading-message {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-color);
+        opacity: 0.8;
+      }
+
+      .btn-danger {
+        background: #dc3545;
+      }
+
+      .btn-danger:hover {
+        background: #c82333;
+      }
     </style>
   </head>
   <body>
@@ -584,201 +772,307 @@
         <h1>Admin Panel</h1>
       </div>
 
+      <!-- Navigation Tabs -->
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('overview')">
+          Translation Overview
+        </button>
+        <button class="tab-btn" onclick="switchTab('fileManager')">
+          File Manager
+        </button>
+      </div>
+
       <div id="unsavedChanges" class="unsaved-changes hidden">
         ⚠️ You have unsaved changes
       </div>
 
       <div id="status" class="status hidden"></div>
 
-      <div class="section" id="dataOverview">
-        <h3>Data Overview</h3>
-        <p id="loadingText">Loading latest data...</p>
+      <!-- Tab Content -->
+      <div id="overviewTab" class="tab-content active">
+        <div class="section" id="dataOverview">
+          <h3>Data Overview</h3>
+          <p id="loadingText">Loading latest data...</p>
 
-        <div id="statsContainer" class="hidden">
-          <div class="stats-grid">
-            <div
-              class="stat-card"
-              id="termsCard"
-              onclick="toggleSpoiler('termsSpoiler')"
-            >
-              <div class="stat-value" id="termsCount">0</div>
-              <div class="stat-label">Total Terms</div>
+          <div id="statsContainer" class="hidden">
+            <div class="stats-grid">
+              <div
+                class="stat-card"
+                id="termsCard"
+                onclick="toggleSpoiler('termsSpoiler')"
+              >
+                <div class="stat-value" id="termsCount">0</div>
+                <div class="stat-label">Total Terms</div>
+              </div>
+              <div
+                class="stat-card"
+                id="languagesCard"
+                onclick="toggleSpoiler('languagesSpoiler')"
+              >
+                <div class="stat-value" id="languagesCount">0</div>
+                <div class="stat-label">Languages</div>
+              </div>
             </div>
-            <div
-              class="stat-card"
-              id="languagesCard"
-              onclick="toggleSpoiler('languagesSpoiler')"
-            >
-              <div class="stat-value" id="languagesCount">0</div>
-              <div class="stat-label">Languages</div>
+
+            <div class="spoiler">
+              <button
+                class="spoiler-toggle"
+                onclick="toggleSpoiler('termsSpoiler')"
+              >
+                Show all terms
+              </button>
+              <div class="spoiler-content" id="termsSpoiler"></div>
+            </div>
+
+            <div class="spoiler">
+              <button
+                class="spoiler-toggle"
+                onclick="toggleSpoiler('languagesSpoiler')"
+              >
+                Show all languages
+              </button>
+              <div class="spoiler-content" id="languagesSpoiler"></div>
             </div>
           </div>
+        </div>
 
-          <div class="spoiler">
-            <button
-              class="spoiler-toggle"
-              onclick="toggleSpoiler('termsSpoiler')"
-            >
-              Show all terms
+        <div class="section">
+          <h3>Upload New Base Language File</h3>
+          <p>Upload a new base localization file to update the data.</p>
+
+          <div class="file-upload">
+            <div class="form-group">
+              <label for="baseFileInput"
+                >Select base language file (CSV):</label
+              >
+              <input type="file" id="baseFileInput" accept=".csv" />
+            </div>
+            <button class="btn btn-primary" id="processBaseFileBtn">
+              Process File
             </button>
-            <div class="spoiler-content" id="termsSpoiler"></div>
-          </div>
-
-          <div class="spoiler">
-            <button
-              class="spoiler-toggle"
-              onclick="toggleSpoiler('languagesSpoiler')"
-            >
-              Show all languages
-            </button>
-            <div class="spoiler-content" id="languagesSpoiler"></div>
           </div>
         </div>
-      </div>
 
-      <div class="section">
-        <h3>Upload New Base Language File</h3>
-        <p>Upload a new base localization file to update the data.</p>
-
-        <div class="file-upload">
-          <div class="form-group">
-            <label for="baseFileInput">Select base language file (CSV):</label>
-            <input type="file" id="baseFileInput" accept=".csv" />
-          </div>
-          <button class="btn btn-primary" id="processBaseFileBtn">
-            Process File
-          </button>
-        </div>
-      </div>
-
-      <div class="section">
-        <h3>Language Translation Files</h3>
-        <p>
-          Upload local language files or fetch and merge language translation
-          files from the server.
-        </p>
-
-        <!-- Local File Upload -->
-        <div class="file-upload">
-          <h4 style="color: var(--link-color); margin-bottom: 0.5rem">
-            Upload Local Files
-          </h4>
-          <div class="form-group">
-            <label for="languageFilesInput">Select language files (CSV):</label>
-            <input type="file" id="languageFilesInput" accept=".csv" multiple />
-          </div>
-          <button class="btn btn-primary" id="processLanguageFilesBtn">
-            Process Language Files
-          </button>
-        </div>
-
-        <div id="languageFilesStatus" class="hidden">
-          <h4>File Processing Status:</h4>
-          <div id="languageFilesResults"></div>
-        </div>
-
-        <!-- Server Files -->
-        <div style="margin-top: 2rem">
-          <h4 style="color: var(--link-color); margin-bottom: 0.5rem">
-            Server Files
-          </h4>
-          <p style="margin-bottom: 1rem; font-size: 0.9rem; opacity: 0.9">
-            Fetch and merge language translation files from the server that
-            haven't been merged into the main sheet yet.
+        <div class="section">
+          <h3>Language Translation Files</h3>
+          <p>
+            Upload local language files or fetch and merge language translation
+            files from the server.
           </p>
 
-          <div
-            id="serverFilesSummary"
-            class="hidden"
-            style="
-              margin-bottom: 1rem;
-              padding: 1rem;
-              background: var(--secondary-bg);
-              border-radius: 6px;
-              border-left: 4px solid var(--link-color);
-            "
-          >
-            <div id="serverFilesSummaryText"></div>
+          <!-- Local File Upload -->
+          <div class="file-upload">
+            <h4 style="color: var(--link-color); margin-bottom: 0.5rem">
+              Upload Local Files
+            </h4>
+            <div class="form-group">
+              <label for="languageFilesInput"
+                >Select language files (CSV):</label
+              >
+              <input
+                type="file"
+                id="languageFilesInput"
+                accept=".csv"
+                multiple
+              />
+            </div>
+            <button class="btn btn-primary" id="processLanguageFilesBtn">
+              Process Language Files
+            </button>
           </div>
 
-          <div style="margin-bottom: 1rem">
+          <div id="languageFilesStatus" class="hidden">
+            <h4>File Processing Status:</h4>
+            <div id="languageFilesResults"></div>
+          </div>
+
+          <!-- Server Files -->
+          <div style="margin-top: 2rem">
+            <h4 style="color: var(--link-color); margin-bottom: 0.5rem">
+              Server Files
+            </h4>
+            <p style="margin-bottom: 1rem; font-size: 0.9rem; opacity: 0.9">
+              Fetch and merge language translation files from the server that
+              haven't been merged into the main sheet yet.
+            </p>
+
             <div
-              id="serverFilesLoading"
-              style="
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                margin-bottom: 1rem;
-              "
-            >
-              <span style="color: var(--link-color)"
-                >🔄 Loading server files...</span
-              >
-            </div>
-            <div
-              id="serverFilesControls"
+              id="serverFilesSummary"
               class="hidden"
               style="
-                display: flex;
-                align-items: center;
-                gap: 1rem;
                 margin-bottom: 1rem;
+                padding: 1rem;
+                background: var(--secondary-bg);
+                border-radius: 6px;
+                border-left: 4px solid var(--link-color);
               "
             >
-              <button class="btn btn-primary" id="mergeAllUnmergedBtn" disabled>
-                Merge All Unmerged Files
-              </button>
-              <button class="btn btn-secondary" id="mergeAllLQABtn" disabled>
-                Merge All LQA Files
-              </button>
-              <button
-                class="btn"
-                id="refreshServerFilesBtn"
-                style="padding: 0.5rem 1rem; font-size: 0.9rem"
-              >
-                🔄 Refresh
-              </button>
+              <div id="serverFilesSummaryText"></div>
             </div>
-          </div>
 
-          <div class="spoiler">
-            <button
-              class="spoiler-toggle"
-              onclick="toggleSpoiler('serverFilesDetails')"
-            >
-              Show server files details
-            </button>
-            <div class="spoiler-content" id="serverFilesDetails">
-              <div id="serverFilesStatus" class="hidden">
-                <h4>Server Files Status:</h4>
-                <div id="serverFilesResults"></div>
+            <div style="margin-bottom: 1rem">
+              <div
+                id="serverFilesLoading"
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5rem;
+                  margin-bottom: 1rem;
+                "
+              >
+                <span style="color: var(--link-color)"
+                  >🔄 Loading server files...</span
+                >
+              </div>
+              <div
+                id="serverFilesControls"
+                class="hidden"
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 1rem;
+                  margin-bottom: 1rem;
+                "
+              >
+                <button
+                  class="btn btn-primary"
+                  id="mergeAllUnmergedBtn"
+                  disabled
+                >
+                  Merge All Unmerged Files
+                </button>
+                <button class="btn btn-secondary" id="mergeAllLQABtn" disabled>
+                  Merge All LQA Files
+                </button>
+                <button
+                  class="btn"
+                  id="refreshServerFilesBtn"
+                  style="padding: 0.5rem 1rem; font-size: 0.9rem"
+                >
+                  🔄 Refresh
+                </button>
+              </div>
+            </div>
+
+            <div class="spoiler">
+              <button
+                class="spoiler-toggle"
+                onclick="toggleSpoiler('serverFilesDetails')"
+              >
+                Show server files details
+              </button>
+              <div class="spoiler-content" id="serverFilesDetails">
+                <div id="serverFilesStatus" class="hidden">
+                  <h4>Server Files Status:</h4>
+                  <div id="serverFilesResults"></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        <div class="section hidden" id="changesSection">
+          <h3>Changes Summary</h3>
+          <div id="changesContent"></div>
+          <button class="btn btn-primary" id="applyChangesBtn">
+            Apply Changes
+          </button>
+          <button class="btn" id="discardChangesBtn">Discard Changes</button>
+        </div>
+
+        <div class="section hidden" id="downloadSection">
+          <h3>Download Updated Data</h3>
+          <p>Your changes have been applied. Download the updated file:</p>
+          <button class="btn btn-primary" id="downloadUpdatedBtn">
+            Download Updated File
+          </button>
+        </div>
       </div>
 
-      <div class="section hidden" id="changesSection">
-        <h3>Changes Summary</h3>
-        <div id="changesContent"></div>
-        <button class="btn btn-primary" id="applyChangesBtn">
-          Apply Changes
-        </button>
-        <button class="btn" id="discardChangesBtn">Discard Changes</button>
-      </div>
+      <!-- File Manager Tab -->
+      <div id="fileManagerTab" class="tab-content">
+        <div class="section">
+          <h3>Server File Manager</h3>
+          <p>Manage all files stored on the server.</p>
 
-      <div class="section hidden" id="downloadSection">
-        <h3>Download Updated Data</h3>
-        <p>Your changes have been applied. Download the updated file:</p>
-        <button class="btn btn-primary" id="downloadUpdatedBtn">
-          Download Updated File
-        </button>
+          <div class="file-manager-controls">
+            <button class="btn btn-primary" id="refreshFilesBtn">
+              🔄 Refresh Files
+            </button>
+            <button class="btn btn-danger" id="deleteAllFilesBtn">
+              🗑️ Delete All Files
+            </button>
+          </div>
+
+          <div id="fileManagerLoading" class="loading-message">
+            Loading server files...
+          </div>
+
+          <div id="fileManagerContent" class="hidden">
+            <div class="files-summary">
+              <div class="summary-stats">
+                <span id="totalIDsCount">0</span> IDs found
+                <span id="totalFilesCount">0</span> total files
+                <span id="totalSizeDisplay">0 bytes</span> total size
+              </div>
+            </div>
+
+            <div id="filesList" class="files-list">
+              <!-- Files will be populated here -->
+            </div>
+          </div>
+
+          <div id="noFilesMessage" class="hidden">
+            <p>No files found on the server.</p>
+          </div>
+        </div>
       </div>
     </div>
 
     <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/diff@5.1.0/dist/diff.min.js"></script>
     <script>
+      // Global function for switching tabs
+      window.switchTab = function (tabName) {
+        // Hide all tab contents
+        document.querySelectorAll(".tab-content").forEach((content) => {
+          content.classList.remove("active");
+        });
+
+        // Remove active class from all tab buttons
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.classList.remove("active");
+        });
+
+        // Show selected tab content
+        const tabContent = document.getElementById(tabName + "Tab");
+        if (tabContent) {
+          tabContent.classList.add("active");
+        }
+
+        // Add active class to selected tab button
+        event.target.classList.add("active");
+
+        // If switching to file manager, load files
+        if (tabName === "fileManager") {
+          window.adminManager.loadServerFiles();
+        }
+      };
+
+      // Global function for toggling metadata display
+      window.toggleMetadata = function (idName) {
+        const content = document.getElementById(`metadata-content-${idName}`);
+        const button = document.getElementById(`metadata-toggle-${idName}`);
+
+        if (content && button) {
+          content.classList.toggle("show");
+          const isShowing = content.classList.contains("show");
+          button.textContent = isShowing
+            ? "▼ Hide Metadata"
+            : "▶ Show Metadata";
+        }
+      };
+
       // Global function for switching between diff modes
       window.showDiffMode = function (index, mode) {
         // Get all mode buttons
