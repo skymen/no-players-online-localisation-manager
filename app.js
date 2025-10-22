@@ -314,10 +314,10 @@ class LocalisationManager {
 
       if (userRow) {
         const userEnglish = userRow.English || "";
-        const userLanguageText = (userRow[userLang] || "").trim();
+        const userLanguageText = userRow[userLang] || "";
 
         // If user has provided a translation (and it's not empty)
-        if (userLanguageText) {
+        if (userLanguageText && userLanguageText.trim() !== "") {
           languageText = userLanguageText;
 
           // Check if translation needs update (English changed)

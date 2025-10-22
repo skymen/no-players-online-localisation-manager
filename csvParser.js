@@ -55,10 +55,10 @@ export function parseCSV(csvText, options = {}) {
       header: true,
       skipEmptyLines: true,
       transformHeader: function (header) {
-        return header.trim();
+        return header;
       },
       transform: function (value) {
-        return value.trim();
+        return value;
       },
       ...options,
     };

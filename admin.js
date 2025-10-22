@@ -720,7 +720,7 @@ class AdminManager {
     const fileDataMap = {};
     fileData.forEach((row) => {
       if (row.termID && row[language] && row[language].trim() !== "") {
-        fileDataMap[row.termID] = row[language].trim();
+        fileDataMap[row.termID] = row[language];
       }
     });
 
@@ -737,7 +737,7 @@ class AdminManager {
         const existingTranslation = row[language] || "";
 
         if (
-          existingTranslation.trim() !== newTranslation &&
+          existingTranslation !== newTranslation &&
           newTranslation.trim() !== ""
         ) {
           row[language] = newTranslation;
