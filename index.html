@@ -864,10 +864,23 @@
         </div>
 
         <div class="actions-area hidden" id="actionsArea">
-          <a href="#" class="download-link" id="downloadLatestBtn">
-            Download latest version for
-            <strong id="selectedLanguageName"></strong>
-          </a>
+          <div
+            style="
+              display: flex;
+              gap: 0.5rem;
+              margin-bottom: 1rem;
+              flex-wrap: wrap;
+            "
+          >
+            <a href="#" class="download-link" id="downloadLatestCsvBtn">
+              Download CSV for
+              <strong id="selectedLanguageNameCsv"></strong>
+            </a>
+            <a href="#" class="download-link" id="downloadLatestXlsxBtn">
+              Download XLSX for
+              <strong id="selectedLanguageNameXlsx"></strong>
+            </a>
+          </div>
 
           <!-- Server Files Section -->
           <div id="serverFilesSection" class="server-files-section hidden">
@@ -910,9 +923,14 @@
         <h3 id="reportHeader">Translation Report</h3>
         <div id="reportContent"></div>
         <div class="report-actions">
-          <button class="btn btn-link hidden" id="downloadProcessedBtn">
-            Download Updated CSV
-          </button>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap">
+            <button class="btn btn-link hidden" id="downloadProcessedCsvBtn">
+              Download Updated CSV
+            </button>
+            <button class="btn btn-link hidden" id="downloadProcessedXlsxBtn">
+              Download Updated XLSX
+            </button>
+          </div>
           <button class="btn" id="backToLanguageBtn">
             ← Back to Language Selection
           </button>

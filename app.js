@@ -11,6 +11,7 @@ import {
   generateCharDiff,
   generateEnhancedLineDiff,
 } from "./diffModule.js";
+import { csvToXlsx } from "./csv2xslx.js";
 
 class LocalisationManager {
   constructor() {
@@ -41,17 +42,26 @@ class LocalisationManager {
       .getElementById("lqaCheckbox")
       .addEventListener("change", (e) => this.onLqaCheckboxChange(e));
     document
-      .getElementById("downloadLatestBtn")
+      .getElementById("downloadLatestCsvBtn")
       .addEventListener("click", (e) => {
         e.preventDefault();
-        this.downloadLatestVersion();
+        this.downloadLatestVersion("csv");
+      });
+    document
+      .getElementById("downloadLatestXlsxBtn")
+      .addEventListener("click", (e) => {
+        e.preventDefault();
+        this.downloadLatestVersion("xlsx");
       });
     document
       .getElementById("fileInput")
       .addEventListener("change", (e) => this.handleFileSelection(e));
     document
-      .getElementById("downloadProcessedBtn")
-      .addEventListener("click", () => this.downloadProcessedFile());
+      .getElementById("downloadProcessedCsvBtn")
+      .addEventListener("click", () => this.downloadProcessedFile("csv"));
+    document
+      .getElementById("downloadProcessedXlsxBtn")
+      .addEventListener("click", () => this.downloadProcessedFile("xlsx"));
     document
       .getElementById("backToLanguageBtn")
       .addEventListener("click", () => this.goBackToLanguageSelection());
@@ -175,7 +185,9 @@ class LocalisationManager {
 
     if (e.target.value) {
       this.selectedLanguage = e.target.value;
-      document.getElementById("selectedLanguageName").textContent =
+      document.getElementById("selectedLanguageNameCsv").textContent =
+        this.selectedLanguage;
+      document.getElementById("selectedLanguageNameXlsx").textContent =
         this.selectedLanguage;
 
       // Save state
@@ -273,8 +285,13 @@ class LocalisationManager {
         <div class="server-file-actions">
           <button class="server-file-btn" onclick="window.localisationManager.downloadServerFileToUser('${fileId}', '${
       file.version
-    }')">
-            Download
+    }', 'csv')">
+            CSV
+          </button>
+          <button class="server-file-btn" onclick="window.localisationManager.downloadServerFileToUser('${fileId}', '${
+      file.version
+    }', 'xlsx')">
+            XLSX
           </button>
           ${
             isCurrent
@@ -857,18 +874,37 @@ class LocalisationManager {
     });
   }
 
-  downloadLatestVersion() {
+  downloadLatestVersion(format = "csv") {
     if (!this.selectedLanguage || !this.data) {
       alert("No language or data available");
       return;
     }
 
-    this.showStatus("Generating latest version CSV...");
+    this.showStatus(`Generating latest version ${format.toUpperCase()}...`);
 
-    setTimeout(() => {
-      const csv = this.generateLatestVersionCSV(this.selectedLanguage);
-      this.downloadFile(csv, `${this.selectedLanguage}_latest.csv`);
-      this.hideStatus();
+    setTimeout(async () => {
+      try {
+        const csv = this.generateLatestVersionCSV(this.selectedLanguage);
+
+        if (format === "xlsx") {
+          await csvToXlsx(csv, {
+            filename: `${this.selectedLanguage}_latest.xlsx`,
+            title: this.selectedLanguage,
+            csvSeparator: ",",
+            creator: "NPO Localisation Manager",
+            subject: `Latest ${this.selectedLanguage} translations`,
+          });
+        } else {
+          this.downloadFile(csv, `${this.selectedLanguage}_latest.csv`);
+        }
+
+        this.hideStatus();
+      } catch (error) {
+        this.showStatus(
+          `Error generating ${format.toUpperCase()}: ${error.message}`
+        );
+        console.error(`Download ${format} error:`, error);
+      }
     }, 500);
   }
 
@@ -1082,7 +1118,10 @@ class LocalisationManager {
 
       reportContent.innerHTML = html;
       document
-        .getElementById("downloadProcessedBtn")
+        .getElementById("downloadProcessedCsvBtn")
+        .classList.remove("hidden");
+      document
+        .getElementById("downloadProcessedXlsxBtn")
         .classList.remove("hidden");
 
       // Only auto-upload for user uploads, not server file validations
@@ -1158,7 +1197,12 @@ class LocalisationManager {
     `;
 
     reportContent.innerHTML = html;
-    document.getElementById("downloadProcessedBtn").classList.remove("hidden");
+    document
+      .getElementById("downloadProcessedCsvBtn")
+      .classList.remove("hidden");
+    document
+      .getElementById("downloadProcessedXlsxBtn")
+      .classList.remove("hidden");
 
     // Auto-upload incomplete files for user uploads (not server file validations)
     if (!this.isValidatingServerFile) {
@@ -1340,18 +1384,37 @@ class LocalisationManager {
       .replace(/>/g, "&gt;");
   }
 
-  downloadProcessedFile() {
+  downloadProcessedFile(format = "csv") {
     if (!this.processedData) {
       alert("No processed data available");
       return;
     }
 
-    this.showStatus("Generating processed CSV...");
+    this.showStatus(`Generating processed ${format.toUpperCase()}...`);
 
-    setTimeout(() => {
-      const csv = this.generateProcessedCSV();
-      this.downloadFile(csv, `${this.selectedLanguage}_updated.csv`);
-      this.hideStatus();
+    setTimeout(async () => {
+      try {
+        const csv = this.generateProcessedCSV();
+
+        if (format === "xlsx") {
+          await csvToXlsx(csv, {
+            filename: `${this.selectedLanguage}_updated.xlsx`,
+            title: this.selectedLanguage,
+            csvSeparator: ",",
+            creator: "NPO Localisation Manager",
+            subject: `Updated ${this.selectedLanguage} translations`,
+          });
+        } else {
+          this.downloadFile(csv, `${this.selectedLanguage}_updated.csv`);
+        }
+
+        this.hideStatus();
+      } catch (error) {
+        this.showStatus(
+          `Error generating ${format.toUpperCase()}: ${error.message}`
+        );
+        console.error(`Download ${format} error:`, error);
+      }
     }, 500);
   }
 
@@ -1421,8 +1484,9 @@ class LocalisationManager {
     // Reset file input
     document.getElementById("fileInput").value = "";
 
-    // Hide download button
-    document.getElementById("downloadProcessedBtn").classList.add("hidden");
+    // Hide download buttons
+    document.getElementById("downloadProcessedCsvBtn").classList.add("hidden");
+    document.getElementById("downloadProcessedXlsxBtn").classList.add("hidden");
 
     // Go back to step 2 (language selection)
     this.showStep(2);
@@ -1445,21 +1509,32 @@ class LocalisationManager {
   }
 
   // Global methods for onclick handlers
-  async downloadServerFileToUser(fileId, version) {
+  async downloadServerFileToUser(fileId, version, format = "csv") {
     try {
       this.showStatus(
         `Downloading ${
           version === "current" ? "current" : `backup ${version}`
-        } file...`
+        } file as ${format.toUpperCase()}...`
       );
 
       const csvContent = await this.downloadServerFile(fileId, version);
-      const filename =
+      const baseFilename =
         version === "current"
-          ? `${fileId}_server_current.csv`
-          : `${fileId}_server_backup_${version}.csv`;
+          ? `${fileId}_server_current`
+          : `${fileId}_server_backup_${version}`;
 
-      this.downloadFile(csvContent, filename);
+      if (format === "xlsx") {
+        await csvToXlsx(csvContent, {
+          filename: `${baseFilename}.xlsx`,
+          title: this.selectedLanguage || fileId,
+          csvSeparator: ",",
+          creator: "NPO Localisation Manager",
+          subject: `Server file: ${fileId} (${version})`,
+        });
+      } else {
+        this.downloadFile(csvContent, `${baseFilename}.csv`);
+      }
+
       this.hideStatus();
     } catch (error) {
       this.showStatus(`Error downloading file: ${error.message}`);
