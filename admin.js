@@ -525,7 +525,11 @@ class AdminManager {
         updatedRow.English = uploadedMap[originalRow.termID].English || "";
 
         // If English was modified, mark translations as needing update
-        if (modified.some((m) => m.termID === originalRow.termID)) {
+        // But only if shouldBeTranslated is TRUE
+        if (
+          modified.some((m) => m.termID === originalRow.termID) &&
+          originalRow.shouldBeTranslated === "TRUE"
+        ) {
           updatedRow.translationNeedsToBeUpdated = "TRUE";
         }
 
@@ -541,10 +545,11 @@ class AdminManager {
     // Add new terms
     Object.values(uploadedMap).forEach((newRow) => {
       if (newRow.termID && added.includes(newRow.termID)) {
+        debugger;
         const row = {
           termID: newRow.termID,
           notes: newRow.notes || "",
-          shouldBeTranslated: "TRUE",
+          shouldBeTranslated: newRow.shouldBeTranslated || "TRUE",
           translationNeedsToBeUpdated: "FALSE",
           English: newRow.English || "",
         };
@@ -713,10 +718,19 @@ class AdminManager {
     // Update main data
     this.modifiedData.forEach((row) => {
       if (row.termID && fileDataMap.hasOwnProperty(row.termID)) {
+        // Only update rows that should be translated
+        if (row.shouldBeTranslated === "FALSE") {
+          skippedCount++;
+          return;
+        }
+
         const newTranslation = fileDataMap[row.termID];
         const existingTranslation = row[language] || "";
 
-        if (existingTranslation.trim() !== newTranslation) {
+        if (
+          existingTranslation.trim() !== newTranslation &&
+          newTranslation.trim() !== ""
+        ) {
           row[language] = newTranslation;
           updatedCount++;
         } else {

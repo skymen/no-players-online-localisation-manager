@@ -214,7 +214,21 @@ class LocalisationManager {
 
     latestData.forEach((latestRow) => {
       const termID = latestRow.termID;
-      if (!termID || latestRow.shouldBeTranslated !== "TRUE") return;
+      if (!termID) return;
+
+      // Skip rows that shouldn't be translated
+      if (latestRow.shouldBeTranslated === "FALSE") {
+        processedRows.push({
+          termID: termID,
+          notes: latestRow.notes || "",
+          shouldBeTranslated: latestRow.shouldBeTranslated,
+          translationNeedsToBeUpdated:
+            latestRow.translationNeedsToBeUpdated || "FALSE",
+          English: latestRow.English || "",
+          [userLang]: latestRow[userLang] || "",
+        });
+        return;
+      }
 
       const userRow = userDataMap[termID];
       const latestEnglish = latestRow.English || "";
@@ -228,9 +242,8 @@ class LocalisationManager {
         const userEnglish = userRow.English || "";
         const userLanguageText = userRow[userLang] || "";
 
-        // If user has provided a translation, shouldBeTranslated = FALSE
+        // If user has provided a translation
         if (userLanguageText) {
-          shouldBeTranslated = "FALSE";
           languageText = userLanguageText;
 
           // Check if translation needs update (English changed)
@@ -250,15 +263,12 @@ class LocalisationManager {
           }
         } else {
           // User didn't provide translation, needs translation
-          shouldBeTranslated = "TRUE";
           translationNeedsToBeUpdated = "FALSE";
           needsTranslation.push(termID);
           languageText = ""; // No translation from user
         }
       } else {
         // termID doesn't exist in user file, needs translation
-        shouldBeTranslated = "TRUE";
-        translationNeedsToBeUpdated = "FALSE";
         needsTranslation.push(termID);
         languageText = "";
       }
@@ -534,33 +544,18 @@ class LocalisationManager {
     const isNewLanguage = !this.availableLanguages.includes(language);
 
     const processedData = this.data
-      .filter((row) => row.shouldBeTranslated === "TRUE")
       .map((row) => {
-        const languageText = row[language] || "";
-
-        // Logic for shouldBeTranslated: TRUE if the selected language doesn't have text
-        const shouldBeTranslated = !languageText ? "TRUE" : "FALSE";
-
-        // Logic for translationNeedsToBeUpdated:
-        let translationNeedsToBeUpdated;
-        if (isNewLanguage) {
-          translationNeedsToBeUpdated = "FALSE";
-        } else {
-          translationNeedsToBeUpdated =
-            shouldBeTranslated === "FALSE"
-              ? row.translationNeedsToBeUpdated || "FALSE"
-              : "FALSE";
-        }
-
         return {
           termID: row.termID || "",
           notes: row.notes || "",
-          shouldBeTranslated: shouldBeTranslated,
-          translationNeedsToBeUpdated: translationNeedsToBeUpdated,
+          shouldBeTranslated: row.shouldBeTranslated || "TRUE",
+          translationNeedsToBeUpdated:
+            row.translationNeedsToBeUpdated || "FALSE",
           English: row.English || "",
-          [language]: languageText,
+          [language]: row[language] || "",
         };
-      });
+      })
+      .filter((row) => row.termID); // Only keep rows with valid termID
 
     return generateLocalizationCSV(processedData, [language]);
   }
