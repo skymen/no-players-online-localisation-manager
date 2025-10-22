@@ -481,6 +481,101 @@
         font-size: 0.9rem;
         opacity: 0.9;
       }
+
+      /* Server files styles */
+      .server-file-item {
+        background: var(--bg-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .server-file-item.merged {
+        border-color: #28a745;
+        background: rgba(40, 167, 69, 0.1);
+      }
+
+      .server-file-item.unmerged {
+        border-color: #ffc107;
+        background: rgba(255, 193, 7, 0.1);
+      }
+
+      .server-file-item.no-file {
+        border-color: #dc3545;
+        background: rgba(220, 53, 69, 0.1);
+      }
+
+      .server-file-info {
+        flex: 1;
+      }
+
+      .server-file-name {
+        font-weight: bold;
+        color: var(--link-color);
+        margin-bottom: 0.25rem;
+      }
+
+      .server-file-details {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      .server-file-status {
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-top: 0.25rem;
+        display: inline-block;
+      }
+
+      .server-file-status.merged {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .server-file-status.unmerged {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .server-file-status.no-file {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .server-file-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .server-file-btn {
+        padding: 0.5rem 1rem;
+        background: var(--accent-color);
+        color: var(--text-color);
+        border: none;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+      }
+
+      .server-file-btn:hover {
+        opacity: 0.8;
+      }
+
+      .server-file-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .server-file-btn.merge {
+        background: var(--button-bg);
+      }
     </style>
   </head>
   <body>
@@ -557,13 +652,17 @@
       </div>
 
       <div class="section">
-        <h3>Upload Language Translation Files</h3>
+        <h3>Language Translation Files</h3>
         <p>
-          Upload multiple language files (exported from the main localisation
-          page) to update translations.
+          Upload local language files or fetch and merge language translation
+          files from the server.
         </p>
 
+        <!-- Local File Upload -->
         <div class="file-upload">
+          <h4 style="color: var(--link-color); margin-bottom: 0.5rem">
+            Upload Local Files
+          </h4>
           <div class="form-group">
             <label for="languageFilesInput">Select language files (CSV):</label>
             <input type="file" id="languageFilesInput" accept=".csv" multiple />
@@ -576,6 +675,83 @@
         <div id="languageFilesStatus" class="hidden">
           <h4>File Processing Status:</h4>
           <div id="languageFilesResults"></div>
+        </div>
+
+        <!-- Server Files -->
+        <div style="margin-top: 2rem">
+          <h4 style="color: var(--link-color); margin-bottom: 0.5rem">
+            Server Files
+          </h4>
+          <p style="margin-bottom: 1rem; font-size: 0.9rem; opacity: 0.9">
+            Fetch and merge language translation files from the server that
+            haven't been merged into the main sheet yet.
+          </p>
+
+          <div
+            id="serverFilesSummary"
+            class="hidden"
+            style="
+              margin-bottom: 1rem;
+              padding: 1rem;
+              background: var(--secondary-bg);
+              border-radius: 6px;
+              border-left: 4px solid var(--link-color);
+            "
+          >
+            <div id="serverFilesSummaryText"></div>
+          </div>
+
+          <div style="margin-bottom: 1rem">
+            <div
+              id="serverFilesLoading"
+              style="
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+              "
+            >
+              <span style="color: var(--link-color)"
+                >🔄 Loading server files...</span
+              >
+            </div>
+            <div
+              id="serverFilesControls"
+              class="hidden"
+              style="
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                margin-bottom: 1rem;
+              "
+            >
+              <button class="btn btn-primary" id="mergeAllUnmergedBtn" disabled>
+                Merge All Unmerged Files
+              </button>
+              <button
+                class="btn"
+                id="refreshServerFilesBtn"
+                style="padding: 0.5rem 1rem; font-size: 0.9rem"
+              >
+                🔄 Refresh
+              </button>
+            </div>
+          </div>
+
+          <div class="spoiler">
+            <button
+              class="spoiler-toggle"
+              onclick="toggleSpoiler('serverFilesDetails')"
+            >
+              Show server files details
+            </button>
+            <div class="spoiler-content" id="serverFilesDetails">
+              <div id="serverFilesStatus" class="hidden">
+                <h4>Server Files Status:</h4>
+                <div id="serverFilesResults"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

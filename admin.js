@@ -18,6 +18,7 @@ class AdminManager {
     this.modifiedData = null;
     this.hasUnsavedChanges = false;
     this.languages = [];
+    this.serverFileStatuses = [];
     this.init();
   }
 
@@ -25,6 +26,9 @@ class AdminManager {
     this.bindEvents();
     this.fetchDataAutomatically();
     this.setupBeforeUnloadWarning();
+
+    // Make this instance globally accessible for onclick handlers
+    window.adminManager = this;
   }
 
   bindEvents() {
@@ -43,6 +47,12 @@ class AdminManager {
     document
       .getElementById("processLanguageFilesBtn")
       .addEventListener("click", () => this.processLanguageFiles());
+    document
+      .getElementById("refreshServerFilesBtn")
+      .addEventListener("click", () => this.fetchAllServerFiles());
+    document
+      .getElementById("mergeAllUnmergedBtn")
+      .addEventListener("click", () => this.mergeAllUnmergedFiles());
   }
 
   setupBeforeUnloadWarning() {
@@ -64,6 +74,10 @@ class AdminManager {
       this.modifiedData = [...this.originalData]; // Copy for modifications
       this.extractLanguages();
       this.displayDataOverview();
+
+      // Automatically fetch server files after main data is loaded
+      this.showStatus("Fetching server files...");
+      await this.fetchAllServerFiles();
 
       this.hideStatus();
     } catch (error) {
@@ -127,14 +141,37 @@ class AdminManager {
         .map((row) => row.termID)
         .filter((termID) => termID);
 
-      return { lang, percentage, missingTerms, translatedTerms, totalTerms };
+      // Check if we have server file status for this language
+      const serverStatus = this.serverFileStatuses.find(
+        (s) => s.language === lang
+      );
+      let serverIndicator = "";
+
+      if (serverStatus) {
+        if (serverStatus.hasFile && !serverStatus.isMerged) {
+          serverIndicator =
+            '<span style="color: #ffc107; margin-left: 0.5rem;" title="Has unmerged server file">📤</span>';
+        } else if (serverStatus.hasFile && serverStatus.isMerged) {
+          serverIndicator =
+            '<span style="color: #28a745; margin-left: 0.5rem;" title="Server file merged">✅</span>';
+        }
+      }
+
+      return {
+        lang,
+        percentage,
+        missingTerms,
+        translatedTerms,
+        totalTerms,
+        serverIndicator,
+      };
     });
 
     languagesContent.innerHTML = languageStats
       .map(
         (stat) => `
       <div class="language-item">
-        <span class="language-name">${stat.lang}</span>
+        <span class="language-name">${stat.lang}${stat.serverIndicator}</span>
         <span class="completion-percentage" onclick="showMissingTerms('${
           stat.lang
         }', ${JSON.stringify(stat.missingTerms).replace(/"/g, "&quot;")})">
@@ -817,6 +854,349 @@ class AdminManager {
 
   hideUnsavedChanges() {
     document.getElementById("unsavedChanges").classList.add("hidden");
+  }
+
+  markUnsavedChanges() {
+    this.hasUnsavedChanges = true;
+    this.showUnsavedChanges();
+  }
+
+  // Server files management methods
+  async fetchAllServerFiles() {
+    // Show loading indicator and hide controls
+    const loadingElement = document.getElementById("serverFilesLoading");
+    const controlsElement = document.getElementById("serverFilesControls");
+    const summaryElement = document.getElementById("serverFilesSummary");
+
+    loadingElement.style.display = "flex";
+    controlsElement.classList.add("hidden");
+    summaryElement.classList.add("hidden");
+
+    const serverFilesResults = document.getElementById("serverFilesResults");
+    const serverFilesStatus = document.getElementById("serverFilesStatus");
+
+    try {
+      const serverFileStatuses = [];
+
+      for (const language of this.languages) {
+        try {
+          const fileStatus = await this.checkServerFileStatus(language);
+          serverFileStatuses.push(fileStatus);
+        } catch (error) {
+          console.error(`Error checking ${language}:`, error);
+          serverFileStatuses.push({
+            language,
+            hasFile: false,
+            isMerged: false,
+            error: error.message,
+          });
+        }
+      }
+
+      // Store server file statuses and refresh language display
+      this.serverFileStatuses = serverFileStatuses;
+      this.populateLanguagesList();
+
+      this.displayServerFileStatuses(serverFileStatuses);
+
+      // Calculate counts for summary
+      const languagesWithFiles = serverFileStatuses.filter(
+        (status) => status.hasFile
+      );
+      const unmergedLanguages = serverFileStatuses.filter(
+        (status) => status.hasFile && !status.isMerged
+      );
+      const mergedLanguages = serverFileStatuses.filter(
+        (status) => status.hasFile && status.isMerged
+      );
+
+      // Update summary section
+      this.updateServerFilesSummary(
+        languagesWithFiles.length,
+        unmergedLanguages.length,
+        mergedLanguages.length
+      );
+
+      // Enable merge all button if there are unmerged files
+      const hasUnmergedFiles = unmergedLanguages.length > 0;
+      document.getElementById("mergeAllUnmergedBtn").disabled =
+        !hasUnmergedFiles;
+
+      // Show server files status if we have any files
+      if (languagesWithFiles.length > 0) {
+        serverFilesStatus.classList.remove("hidden");
+      }
+
+      // Hide loading and show controls
+      loadingElement.style.display = "none";
+      controlsElement.classList.remove("hidden");
+
+      this.hideStatus();
+    } catch (error) {
+      // Hide loading and show controls even on error
+      loadingElement.style.display = "none";
+      controlsElement.classList.remove("hidden");
+
+      this.showStatus(`Error fetching server files: ${error.message}`);
+    }
+  }
+
+  updateServerFilesSummary(totalFiles, unmergedCount, mergedCount) {
+    const summaryElement = document.getElementById("serverFilesSummary");
+    const summaryTextElement = document.getElementById(
+      "serverFilesSummaryText"
+    );
+
+    if (totalFiles === 0) {
+      summaryElement.classList.add("hidden");
+      return;
+    }
+
+    let summaryText = `<strong>Server Files Summary:</strong> ${totalFiles} language${
+      totalFiles > 1 ? "s" : ""
+    } with files on server`;
+
+    if (unmergedCount > 0) {
+      summaryText += ` • <span style="color: #ffc107;">${unmergedCount} unmerged</span>`;
+    }
+
+    if (mergedCount > 0) {
+      summaryText += ` • <span style="color: #28a745;">${mergedCount} merged</span>`;
+    }
+
+    summaryTextElement.innerHTML = summaryText;
+    summaryElement.classList.remove("hidden");
+  }
+
+  async checkServerFileStatus(language) {
+    try {
+      // Try to get server files list
+      const response = await fetch(
+        `${CONFIG.PHP_SERVER_URL}?action=backups&id=${encodeURIComponent(
+          language
+        )}`
+      );
+
+      if (!response.ok) {
+        if (response.status === 400) {
+          return { language, hasFile: false, isMerged: false };
+        }
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const backups = result.backups || [];
+
+      if (backups.length === 0) {
+        return { language, hasFile: false, isMerged: false };
+      }
+
+      // Get current file
+      const currentFile = backups.find((f) => f.version === "current");
+      if (!currentFile) {
+        return { language, hasFile: false, isMerged: false };
+      }
+
+      // Download and check merge status
+      const csvResponse = await fetch(
+        `${CONFIG.PHP_SERVER_URL}?action=data&id=${encodeURIComponent(
+          language
+        )}`
+      );
+      if (!csvResponse.ok) {
+        throw new Error(
+          `Failed to download server file: ${csvResponse.status}`
+        );
+      }
+
+      const csvContent = await csvResponse.text();
+      const serverData = parseCSV(csvContent);
+      const isMerged = this.checkIfMerged(serverData, language);
+
+      return {
+        language,
+        hasFile: true,
+        isMerged,
+        fileInfo: currentFile,
+        serverData,
+      };
+    } catch (error) {
+      console.error(`Error checking server file for ${language}:`, error);
+      return {
+        language,
+        hasFile: false,
+        isMerged: false,
+        error: error.message,
+      };
+    }
+  }
+
+  checkIfMerged(serverData, language) {
+    // Create a map of server data by termID
+    const serverDataMap = {};
+    serverData.forEach((row) => {
+      if (row.termID && row[language] && row[language].trim()) {
+        serverDataMap[row.termID] = row[language];
+      }
+    });
+
+    // Check against main sheet data
+    let allMerged = true;
+    let checkedTerms = 0;
+
+    for (const mainRow of this.modifiedData) {
+      const termID = mainRow.termID;
+      if (!termID || mainRow.shouldBeTranslated === "FALSE") continue;
+
+      const serverTranslation = serverDataMap[termID];
+      const mainTranslation = mainRow[language];
+
+      if (serverTranslation) {
+        checkedTerms++;
+        if (serverTranslation !== mainTranslation) {
+          allMerged = false;
+          break;
+        }
+      }
+    }
+
+    return allMerged && checkedTerms > 0;
+  }
+
+  displayServerFileStatuses(statuses) {
+    const resultsContainer = document.getElementById("serverFilesResults");
+
+    const html = statuses
+      .map((status) => {
+        let statusClass = "no-file";
+        let statusText = "No file on server";
+        let actionButtons = "";
+
+        if (status.hasFile) {
+          if (status.isMerged) {
+            statusClass = "merged";
+            statusText = "✅ Merged";
+          } else {
+            statusClass = "unmerged";
+            statusText = "⚠️ Not merged";
+            actionButtons = `
+            <button class="server-file-btn merge" onclick="window.adminManager.mergeServerFile('${status.language}')">
+              Merge
+            </button>
+          `;
+          }
+        }
+
+        const fileDetails = status.fileInfo
+          ? `${Math.round(status.fileInfo.size / 1024)} KB • Uploaded: ${
+              status.fileInfo.uploaded
+            }`
+          : "No file available";
+
+        return `
+        <div class="server-file-item ${statusClass}">
+          <div class="server-file-info">
+            <div class="server-file-name">${status.language}</div>
+            <div class="server-file-details">${fileDetails}</div>
+            <div class="server-file-status ${statusClass}">${statusText}</div>
+          </div>
+          <div class="server-file-actions">
+            ${actionButtons}
+          </div>
+        </div>
+      `;
+      })
+      .join("");
+
+    resultsContainer.innerHTML = html;
+  }
+
+  async mergeServerFile(language) {
+    try {
+      this.showStatus(`Merging server file for ${language}...`);
+
+      const status = await this.checkServerFileStatus(language);
+      if (!status.hasFile || !status.serverData) {
+        throw new Error("No server file available to merge");
+      }
+
+      this.mergeLanguageData(status.serverData, language);
+
+      // Refresh the displays
+      this.displayDataOverview();
+      await this.fetchAllServerFiles();
+
+      // Show download section since we have changes
+      document.getElementById("downloadSection").classList.remove("hidden");
+
+      this.showStatus(`Successfully merged ${language} translations`);
+      setTimeout(() => this.hideStatus(), 2000);
+    } catch (error) {
+      this.showStatus(`Error merging ${language}: ${error.message}`);
+    }
+  }
+
+  async mergeAllUnmergedFiles() {
+    this.showStatus("Merging all unmerged server files...");
+
+    try {
+      let mergedCount = 0;
+
+      for (const language of this.languages) {
+        const status = await this.checkServerFileStatus(language);
+        if (status.hasFile && !status.isMerged && status.serverData) {
+          this.mergeLanguageData(status.serverData, language);
+          mergedCount++;
+        }
+      }
+
+      if (mergedCount > 0) {
+        // Refresh displays
+        this.displayDataOverview();
+        await this.fetchAllServerFiles();
+
+        // Show download section since we have changes
+        document.getElementById("downloadSection").classList.remove("hidden");
+
+        this.showStatus(`Successfully merged ${mergedCount} language files`);
+        setTimeout(() => this.hideStatus(), 3000);
+      } else {
+        this.showStatus("No unmerged files found to merge");
+        setTimeout(() => this.hideStatus(), 2000);
+      }
+    } catch (error) {
+      this.showStatus(`Error merging files: ${error.message}`);
+    }
+  }
+
+  mergeLanguageData(serverData, language) {
+    // Create a map of server translations by termID
+    const serverTranslations = {};
+    serverData.forEach((row) => {
+      if (row.termID && row[language] && row[language].trim()) {
+        serverTranslations[row.termID] = row[language];
+      }
+    });
+
+    // Update modifiedData with server translations
+    let updatedCount = 0;
+    this.modifiedData.forEach((row) => {
+      if (row.termID && serverTranslations[row.termID]) {
+        const oldValue = row[language] || "";
+        const newValue = serverTranslations[row.termID];
+
+        if (oldValue !== newValue) {
+          row[language] = newValue;
+          updatedCount++;
+        }
+      }
+    });
+
+    if (updatedCount > 0) {
+      this.markUnsavedChanges();
+    }
+
+    return updatedCount;
   }
 
   showStatus(message, type = "info") {
