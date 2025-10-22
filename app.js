@@ -142,6 +142,7 @@ class LocalisationManager {
         // Restore LQA checkbox
         if (state.isLqaFile !== undefined) {
           document.getElementById("lqaCheckbox").checked = state.isLqaFile;
+          updateTutorial();
         }
 
         // Trigger language change to show the appropriate UI elements

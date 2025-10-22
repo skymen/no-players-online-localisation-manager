@@ -859,7 +859,7 @@
               id="lqaCheckbox"
               style="width: auto; margin: 0"
             />
-            <span>LQA file</span>
+            <span>I am doing LQA</span>
           </label>
         </div>
 
@@ -923,103 +923,204 @@
     <!-- Tutorial Section -->
     <div class="tutorial-section">
       <button class="tutorial-toggle" id="tutorialToggle">
-        <span>How to Use This Tool</span>
+        <span id="tutorialTitle">How to Use This Tool</span>
         <span class="icon">▼</span>
       </button>
       <div class="tutorial-content" id="tutorialContent">
-        <div class="tutorial-step">
-          <h4>1. Select Your Language</h4>
-          <p>
-            Choose the language you want to work with from the dropdown menu.
-          </p>
+        <!-- Regular Tutorial -->
+        <div id="regularTutorial">
+          <div class="tutorial-step">
+            <h4>1. Select Your Language</h4>
+            <p>
+              Choose the language you want to work with from the dropdown menu.
+              <br /><br />
+              <strong>LQA Mode:</strong> Check the "I am doing LQA" checkbox if
+              you're uploading a Language Quality Assurance (LQA) file
+              containing translation suggestions or corrections.
+            </p>
+          </div>
+
+          <div class="tutorial-step">
+            <h4>2. Download Latest Version (Optional)</h4>
+            <p>
+              If you haven't already started working on it, you can download the
+              latest version of the translation file to see what's already been
+              translated and what needs work.
+            </p>
+          </div>
+
+          <div class="tutorial-step">
+            <h4>3. Upload Your Translation File</h4>
+            <p>Upload your CSV translation file by either:</p>
+            <ul>
+              <li>
+                <strong>Drag & Drop:</strong> Simply drag your CSV file onto the
+                drop zone
+              </li>
+              <li>
+                <strong>Click to Browse:</strong> Click on the drop zone to open
+                a file picker
+              </li>
+            </ul>
+            <br />
+
+            <h4>Make sure to use CSV</h4>
+            <p>
+              If you were working in Google Sheets, Excel or any other format,
+              make sure to export the localisation sheet to CSV
+            </p>
+          </div>
+
+          <div class="tutorial-step">
+            <h4>4. Review LQA Suggestions (If Available)</h4>
+            <p>
+              If LQA (Language Quality Assurance) suggestions exist for your
+              language, you'll see a review step before the report where you
+              can:
+            </p>
+            <ul>
+              <li>
+                <strong>Accept suggestions:</strong> Approve LQA improvements to
+                your translations
+              </li>
+              <li>
+                <strong>Reject suggestions:</strong> Keep your original
+                translations
+              </li>
+              <li>
+                <strong>Review differences:</strong> Compare your translations
+                with LQA suggestions
+              </li>
+            </ul>
+            <p>
+              You can accept/reject individual suggestions or use "Accept All" /
+              "Reject All" buttons for bulk actions.
+            </p>
+          </div>
+
+          <div class="tutorial-step">
+            <h4>5. Review Translation Report</h4>
+            <p>The system will analyze your file and show you:</p>
+            <ul>
+              <li>
+                <strong>Missing Terms:</strong> Terms where the translation
+                doesn't exist
+              </li>
+              <li>
+                <strong>Missing Terms Found in Latest:</strong> Terms missing
+                from your file but already translated in the latest data
+              </li>
+              <li>
+                <strong>Terms Needing Updates:</strong> Terms where the English
+                text has changed compared to your file, so most likely the
+                translation needs to be updated
+              </li>
+            </ul>
+            <br />
+
+            <h4>Use the Diff Viewer</h4>
+            <p>
+              For terms that need updates, a detailed diff of the changes to the
+              english text is provided.
+            </p>
+          </div>
+
+          <div class="tutorial-step">
+            <h4>6. Download Updated File</h4>
+            <p>
+              Once you've reviewed the report, download the updated CSV file.
+              This file includes:
+            </p>
+            <ul>
+              <li>Your existing translations</li>
+              <li>Any extra translations found in the latest data</li>
+              <li>
+                Up to date terms list and their english versions according to
+                the latest data
+              </li>
+            </ul>
+            <br />
+            <p>The file will also remove any unneeded data, such as:</p>
+            <ul>
+              <li>Terms that were removed from the latest data</li>
+              <li>Any other languages found in your file</li>
+            </ul>
+          </div>
+
+          <div class="tutorial-step">
+            <h4>7. Keep iterating</h4>
+            <p>
+              The file is automatically saved on the server when you upload it.
+              Once the report says your file is valid, then you're done for now.
+              Check in later for changes, new terms, or LQA suggestions!
+            </p>
+          </div>
         </div>
 
-        <div class="tutorial-step">
-          <h4>2. Download Latest Version (Optional)</h4>
-          <p>
-            If you haven't already started working on it, you can download the
-            latest version of the translation file to see what's already been
-            translated and what needs work.
-          </p>
-        </div>
+        <!-- LQA Tutorial -->
+        <div id="lqaTutorial" class="hidden">
+          <div class="tutorial-step">
+            <h4>1. Select Your Language & Enable LQA Mode</h4>
+            <p>
+              Choose the language you want to work with from the dropdown menu
+              and make sure the "I am doing LQA" checkbox is checked. This tells
+              the system you're uploading a Language Quality Assurance file.
+            </p>
+          </div>
 
-        <div class="tutorial-step">
-          <h4>3. Upload Your Translation File</h4>
-          <p>Upload your CSV translation file by either:</p>
-          <ul>
-            <li>
-              <strong>Drag & Drop:</strong> Simply drag your CSV file onto the
-              drop zone
-            </li>
-            <li>
-              <strong>Click to Browse:</strong> Click on the drop zone to open a
-              file picker
-            </li>
-          </ul>
-          <br />
+          <div class="tutorial-step">
+            <h4>2. Only keep terms you want to change</h4>
+            <p>
+              LQA files are special translation files that contain suggestions
+              and corrections for improving existing translations.
+            </p>
+            <p>
+              <strong>Important:</strong> LQA files should only contain terms
+              you want to suggest changes for. Missing terms will be ignored,
+              and only existing translations with updates will be processed.
+            </p>
+          </div>
 
-          <h4>Make sure to use CSV</h4>
-          <p>
-            If you were working in Google Sheets, Excel or any other format,
-            make sure to export the localisation sheet to CSV
-          </p>
-        </div>
+          <div class="tutorial-step">
+            <h4>3. Upload Your LQA File</h4>
+            <p>Upload your CSV LQA file by either:</p>
+            <ul>
+              <li>
+                <strong>Drag & Drop:</strong> Simply drag your CSV file onto the
+                drop zone
+              </li>
+              <li>
+                <strong>Click to Browse:</strong> Click on the drop zone to open
+                a file picker
+              </li>
+            </ul>
+          </div>
 
-        <div class="tutorial-step">
-          <h4>4. Review Translation Report</h4>
-          <p>The system will analyze your file and show you:</p>
-          <ul>
-            <li>
-              <strong>Missing Terms:</strong> Terms where the translation
-              doesn't exist
-            </li>
-            <li>
-              <strong>Missing Terms Found in Latest:</strong> Terms missing from
-              your file but already translated in the latest data
-            </li>
-            <li>
-              <strong>Terms Needing Updates:</strong> Terms where the English
-              text has changed compared to your file, so most likely the
-              translation needs to be updated
-            </li>
-          </ul>
-          <br />
+          <div class="tutorial-step">
+            <h4>4. Review LQA Report</h4>
+            <p>The system will analyze your LQA file and show you:</p>
+            <ul>
+              <li>
+                <strong>Terms Needing Updates:</strong> Terms where the English
+                text has changed and your LQA suggestions may need to be updated
+              </li>
+            </ul>
+            <p>
+              Unlike regular files, LQA files won't show missing terms or add
+              translations from the latest data. The focus is purely on quality
+              improvements.
+            </p>
+          </div>
 
-          <h4>Use the Diff Viewer</h4>
-          <p>
-            For terms that need updates, a detailed diff of the changes to the
-            english text is provided.
-          </p>
-        </div>
-
-        <div class="tutorial-step">
-          <h4>5. Download Updated File</h4>
-          <p>
-            Once you've reviewed the report, download the updated CSV file. This
-            file includes:
-          </p>
-          <ul>
-            <li>Your existing translations</li>
-            <li>Any extra translations found in the latest data</li>
-            <li>
-              Up to date terms list and their english versions according to the
-              latest data
-            </li>
-          </ul>
-          <br />
-          <p>The file will also remove any unneeded data, such as:</p>
-          <ul>
-            <li>Terms that were removed from the latest data</li>
-            <li>Any other languages found in your file</li>
-          </ul>
-        </div>
-
-        <div class="tutorial-step">
-          <h4>6. Congratulations!</h4>
-          <p>
-            Once the report says everything is good, the file is automatically
-            uploaded to the server.
-          </p>
+          <div class="tutorial-step">
+            <h4>6. LQA Workflow Complete</h4>
+            <p>
+              Your LQA suggestions are now available in the system. Translators
+              will see your suggestions when they upload files, and the
+              development team can review and apply your improvements through
+              their admin panel.
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -1065,6 +1166,37 @@
           document.body.removeChild(textArea);
         }
       };
+
+      // Global function for switching tutorial based on LQA mode
+      window.updateTutorial = function () {
+        const lqaCheckbox = document.getElementById("lqaCheckbox");
+        const tutorialTitle = document.getElementById("tutorialTitle");
+        const regularTutorial = document.getElementById("regularTutorial");
+        const lqaTutorial = document.getElementById("lqaTutorial");
+
+        if (lqaCheckbox && lqaCheckbox.checked) {
+          // Show LQA tutorial
+          tutorialTitle.textContent = "How to Use This Tool (LQA Mode)";
+          regularTutorial.classList.add("hidden");
+          lqaTutorial.classList.remove("hidden");
+        } else {
+          // Show regular tutorial
+          tutorialTitle.textContent = "How to Use This Tool";
+          lqaTutorial.classList.add("hidden");
+          regularTutorial.classList.remove("hidden");
+        }
+      };
+
+      // Initialize tutorial on page load
+      document.addEventListener("DOMContentLoaded", function () {
+        updateTutorial();
+
+        // Update tutorial when LQA checkbox changes
+        const lqaCheckbox = document.getElementById("lqaCheckbox");
+        if (lqaCheckbox) {
+          lqaCheckbox.addEventListener("change", updateTutorial);
+        }
+      });
 
       // Global function for toggling translation display
       window.toggleTranslation = function (termId) {
