@@ -32,26 +32,20 @@ class LocalisationManager {
       .getElementById("languageSelect")
       .addEventListener("change", (e) => this.onLanguageChange(e));
     document
-      .getElementById("confirmLanguageBtn")
-      .addEventListener("click", () => this.confirmLanguage());
-    // document
-    //   .getElementById("addNewLanguageBtn")
-    //   .addEventListener("click", () => this.showAddLanguageForm());
-    // document
-    //   .getElementById("submitNewLanguageBtn")
-    //   .addEventListener("click", () => this.addNewLanguage());
-    document
       .getElementById("downloadLatestBtn")
-      .addEventListener("click", () => this.downloadLatestVersion());
+      .addEventListener("click", (e) => {
+        e.preventDefault();
+        this.downloadLatestVersion();
+      });
     document
-      .getElementById("uploadFileBtn")
-      .addEventListener("click", () => this.showFileUpload());
-    document
-      .getElementById("processFileBtn")
-      .addEventListener("click", () => this.processUploadedFile());
+      .getElementById("fileInput")
+      .addEventListener("change", (e) => this.handleFileSelection(e));
     document
       .getElementById("downloadProcessedBtn")
       .addEventListener("click", () => this.downloadProcessedFile());
+
+    // Set up drag and drop
+    this.setupDragAndDrop();
   }
 
   async fetchDataAutomatically() {
@@ -90,52 +84,122 @@ class LocalisationManager {
   }
 
   onLanguageChange(e) {
-    const confirmBtn = document.getElementById("confirmLanguageBtn");
-    if (e.target.value) {
-      confirmBtn.disabled = false;
-      this.selectedLanguage = e.target.value;
-    } else {
-      confirmBtn.disabled = true;
-      this.selectedLanguage = null;
-    }
-  }
+    const actionsArea = document.getElementById("actionsArea");
+    const dropZone = document.getElementById("dropZone");
 
-  confirmLanguage() {
-    if (this.selectedLanguage) {
+    if (e.target.value) {
+      this.selectedLanguage = e.target.value;
       document.getElementById("selectedLanguageName").textContent =
         this.selectedLanguage;
+
+      // Show actions area and drop zone
+      actionsArea.classList.remove("hidden");
+      dropZone.classList.remove("hidden");
+    } else {
+      this.selectedLanguage = null;
+
+      // Hide actions area and drop zone
+      actionsArea.classList.add("hidden");
+      dropZone.classList.add("hidden");
+    }
+  }
+
+  setupDragAndDrop() {
+    const dropZone = document.getElementById("dropZone");
+
+    // Prevent default drag behaviors
+    ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+      dropZone.addEventListener(eventName, this.preventDefaults, false);
+      document.body.addEventListener(eventName, this.preventDefaults, false);
+    });
+
+    // Highlight drop zone when item is dragged over it
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropZone.addEventListener(
+        eventName,
+        () => this.highlight(dropZone),
+        false
+      );
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropZone.addEventListener(
+        eventName,
+        () => this.unhighlight(dropZone),
+        false
+      );
+    });
+
+    // Handle dropped files
+    dropZone.addEventListener("drop", (e) => this.handleDrop(e), false);
+
+    // Make drop zone clickable to open file picker
+    dropZone.addEventListener("click", () => {
+      if (this.selectedLanguage) {
+        document.getElementById("fileInput").click();
+      } else {
+        alert("Please select a language first");
+      }
+    });
+  }
+
+  preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  highlight(element) {
+    element.classList.add("dragover");
+  }
+
+  unhighlight(element) {
+    element.classList.remove("dragover");
+  }
+
+  handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+
+    if (files.length > 0) {
+      const file = files[0];
+      this.processFile(file);
+    }
+  }
+
+  handleFileSelection(e) {
+    const file = e.target.files[0];
+    if (file) {
+      this.processFile(file);
+    }
+  }
+
+  async processFile(file) {
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      alert("Please upload a CSV file");
+      return;
+    }
+
+    this.showStatus("Processing uploaded file...");
+
+    try {
+      const csvText = await this.readFileAsText(file);
+      this.uploadedData = parseCSV(csvText);
+      const report = this.compareAndGenerateReport();
+      this.displayReport(report);
       this.showStep(3);
+      this.hideStatus();
+    } catch (error) {
+      this.showStatus(`Error processing file: ${error.message}`);
     }
   }
 
-  showAddLanguageForm() {
-    document.getElementById("addLanguageForm").classList.add("show");
-  }
-
-  addNewLanguage() {
-    const input = document.getElementById("newLanguageName");
-    const languageName = input.value.trim();
-
-    if (!languageName) {
-      alert("Please enter a language name");
-      return;
-    }
-
-    if (this.availableLanguages.includes(languageName)) {
-      alert("This language already exists");
-      return;
-    }
-
-    this.availableLanguages.push(languageName);
-    this.populateLanguageDropdown();
-
-    const select = document.getElementById("languageSelect");
-    select.value = languageName;
-    this.selectedLanguage = languageName;
-
-    document.getElementById("confirmLanguageBtn").disabled = false;
-    document.getElementById("addLanguageForm").classList.remove("show");
-    input.value = "";
+  readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = (e) => reject(new Error("Failed to read file"));
+      reader.readAsText(file);
+    });
   }
 
   downloadLatestVersion() {
