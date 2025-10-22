@@ -152,10 +152,7 @@ export function generateLocalizationCSV(data, languages = []) {
   const sortedData = [...data].sort((a, b) => {
     const termA = (a.termID || "").toString();
     const termB = (b.termID || "").toString();
-    return termA.localeCompare(termB, undefined, {
-      numeric: true,
-      sensitivity: "base",
-    });
+    return termA.localeCompare(termB, undefined, {});
   });
 
   // Define the standard column order for localization files
