@@ -148,6 +148,16 @@ export function generateLocalizationCSV(data, languages = []) {
     return "";
   }
 
+  // Sort data by termID before generating CSV
+  const sortedData = [...data].sort((a, b) => {
+    const termA = (a.termID || "").toString();
+    const termB = (b.termID || "").toString();
+    return termA.localeCompare(termB, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  });
+
   // Define the standard column order for localization files
   const standardHeaders = [
     "termID",
@@ -158,7 +168,7 @@ export function generateLocalizationCSV(data, languages = []) {
   ];
   const allHeaders = [...standardHeaders, ...languages];
 
-  return generateCSV(data, allHeaders);
+  return generateCSV(sortedData, allHeaders);
 }
 
 /**
