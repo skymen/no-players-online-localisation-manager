@@ -916,6 +916,7 @@ class LocalisationManager {
     const latestData = this.data;
     const userLang = this.selectedLanguage;
     const userData = this.uploadedData;
+    const isLqaMode = document.getElementById("lqaCheckbox").checked;
 
     // Create a map of user data by termID
     const userDataMap = {};
@@ -984,23 +985,34 @@ class LocalisationManager {
           // User didn't provide translation or it's empty
           translationNeedsToBeUpdated = "FALSE";
 
-          // Check if this term already has a translation in the latest data
+          if (isLqaMode) {
+            // For LQA files: Skip missing terms entirely
+            return; // Don't add this term to processedRows
+          } else {
+            // For regular files: Check if this term already has a translation in the latest data
+            if (latestLanguageText) {
+              missingTermsFoundInLatest.push(termID);
+              languageText = latestLanguageText; // Keep the latest translation
+            } else {
+              needsTranslation.push(termID);
+              languageText = ""; // No translation available
+            }
+          }
+        }
+      } else {
+        // termID doesn't exist in user file
+        if (isLqaMode) {
+          // For LQA files: Skip missing terms entirely
+          return; // Don't add this term to processedRows
+        } else {
+          // For regular files: Add missing terms
           if (latestLanguageText) {
             missingTermsFoundInLatest.push(termID);
             languageText = latestLanguageText; // Keep the latest translation
           } else {
             needsTranslation.push(termID);
-            languageText = ""; // No translation available
+            languageText = "";
           }
-        }
-      } else {
-        // termID doesn't exist in user file
-        if (latestLanguageText) {
-          missingTermsFoundInLatest.push(termID);
-          languageText = latestLanguageText; // Keep the latest translation
-        } else {
-          needsTranslation.push(termID);
-          languageText = "";
         }
       }
 

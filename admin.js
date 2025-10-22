@@ -19,6 +19,7 @@ class AdminManager {
     this.hasUnsavedChanges = false;
     this.languages = [];
     this.serverFileStatuses = [];
+    this.lqaFileStatuses = [];
     this.init();
   }
 
@@ -53,6 +54,9 @@ class AdminManager {
     document
       .getElementById("mergeAllUnmergedBtn")
       .addEventListener("click", () => this.mergeAllUnmergedFiles());
+    document
+      .getElementById("mergeAllLQABtn")
+      .addEventListener("click", () => this.mergeAllUnmergedLQAFiles());
   }
 
   setupBeforeUnloadWarning() {
@@ -893,11 +897,29 @@ class AdminManager {
         }
       }
 
-      // Store server file statuses and refresh language display
+      // Also check LQA files
+      const lqaFileStatuses = [];
+      for (const language of this.languages) {
+        try {
+          const lqaStatus = await this.checkLQAFileStatus(language);
+          lqaFileStatuses.push(lqaStatus);
+        } catch (error) {
+          console.error(`Error checking LQA for ${language}:`, error);
+          lqaFileStatuses.push({
+            language,
+            hasLQAFile: false,
+            lqaIsMerged: false,
+            error: error.message,
+          });
+        }
+      }
+
+      // Store server file statuses and LQA statuses
       this.serverFileStatuses = serverFileStatuses;
+      this.lqaFileStatuses = lqaFileStatuses;
       this.populateLanguagesList();
 
-      this.displayServerFileStatuses(serverFileStatuses);
+      this.displayServerFileStatuses(serverFileStatuses, lqaFileStatuses);
 
       // Calculate counts for summary
       const languagesWithFiles = serverFileStatuses.filter(
@@ -910,17 +932,35 @@ class AdminManager {
         (status) => status.hasFile && status.isMerged
       );
 
+      // Calculate LQA counts
+      const languagesWithLQA = lqaFileStatuses.filter(
+        (status) => status.hasLQAFile
+      );
+      const unmergedLQA = lqaFileStatuses.filter(
+        (status) => status.hasLQAFile && !status.lqaIsMerged
+      );
+      const mergedLQA = lqaFileStatuses.filter(
+        (status) => status.hasLQAFile && status.lqaIsMerged
+      );
+
       // Update summary section
       this.updateServerFilesSummary(
         languagesWithFiles.length,
         unmergedLanguages.length,
-        mergedLanguages.length
+        mergedLanguages.length,
+        languagesWithLQA.length,
+        unmergedLQA.length,
+        mergedLQA.length
       );
 
       // Enable merge all button if there are unmerged files
       const hasUnmergedFiles = unmergedLanguages.length > 0;
       document.getElementById("mergeAllUnmergedBtn").disabled =
         !hasUnmergedFiles;
+
+      // Enable merge all LQA button if there are unmerged LQA files
+      const hasUnmergedLQA = unmergedLQA.length > 0;
+      document.getElementById("mergeAllLQABtn").disabled = !hasUnmergedLQA;
 
       // Show server files status if we have any files
       if (languagesWithFiles.length > 0) {
@@ -941,13 +981,20 @@ class AdminManager {
     }
   }
 
-  updateServerFilesSummary(totalFiles, unmergedCount, mergedCount) {
+  updateServerFilesSummary(
+    totalFiles,
+    unmergedCount,
+    mergedCount,
+    totalLQA = 0,
+    unmergedLQA = 0,
+    mergedLQA = 0
+  ) {
     const summaryElement = document.getElementById("serverFilesSummary");
     const summaryTextElement = document.getElementById(
       "serverFilesSummaryText"
     );
 
-    if (totalFiles === 0) {
+    if (totalFiles === 0 && totalLQA === 0) {
       summaryElement.classList.add("hidden");
       return;
     }
@@ -962,6 +1009,21 @@ class AdminManager {
 
     if (mergedCount > 0) {
       summaryText += ` • <span style="color: #28a745;">${mergedCount} merged</span>`;
+    }
+
+    // Add LQA summary
+    if (totalLQA > 0) {
+      summaryText += `<br><strong>LQA Files:</strong> ${totalLQA} language${
+        totalLQA > 1 ? "s" : ""
+      } with LQA files`;
+
+      if (unmergedLQA > 0) {
+        summaryText += ` • <span style="color: #ffc107;">${unmergedLQA} unmerged LQA</span>`;
+      }
+
+      if (mergedLQA > 0) {
+        summaryText += ` • <span style="color: #28a745;">${mergedLQA} merged LQA</span>`;
+      }
     }
 
     summaryTextElement.innerHTML = summaryText;
@@ -1031,12 +1093,73 @@ class AdminManager {
     }
   }
 
-  checkIfMerged(serverData, language) {
-    // Create a map of server data by termID
-    const serverDataMap = {};
-    serverData.forEach((row) => {
+  async checkLQAFileStatus(language) {
+    try {
+      const lqaId = `LQA_${language}`;
+
+      // Try to get LQA server files list
+      const response = await fetch(
+        `${CONFIG.PHP_SERVER_URL}?action=backups&id=${encodeURIComponent(
+          lqaId
+        )}`
+      );
+
+      if (!response.ok) {
+        if (response.status === 400) {
+          return { language, hasLQAFile: false, lqaIsMerged: false };
+        }
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const backups = result.backups || [];
+
+      if (backups.length === 0) {
+        return { language, hasLQAFile: false, lqaIsMerged: false };
+      }
+
+      // Get current LQA file
+      const currentFile = backups.find((f) => f.version === "current");
+      if (!currentFile) {
+        return { language, hasLQAFile: false, lqaIsMerged: false };
+      }
+
+      // Download and check if LQA is merged into main sheet
+      const csvResponse = await fetch(
+        `${CONFIG.PHP_SERVER_URL}?action=data&id=${encodeURIComponent(lqaId)}`
+      );
+      if (!csvResponse.ok) {
+        throw new Error(`Failed to download LQA file: ${csvResponse.status}`);
+      }
+
+      const csvContent = await csvResponse.text();
+      const lqaData = parseCSV(csvContent);
+      const lqaIsMerged = this.checkIfLQAMerged(lqaData, language);
+
+      return {
+        language,
+        hasLQAFile: true,
+        lqaIsMerged,
+        lqaFileInfo: currentFile,
+        lqaData,
+      };
+    } catch (error) {
+      console.error(`Error checking LQA file for ${language}:`, error);
+      return {
+        language,
+        hasLQAFile: false,
+        lqaIsMerged: false,
+        error: error.message,
+      };
+    }
+  }
+
+  checkIfLQAMerged(lqaData, language) {
+    // Check if LQA translations have been merged into the main sheet
+    const lqaDataMap = {};
+    lqaData.forEach((row) => {
       if (row.termID && row[language] && row[language].trim()) {
-        serverDataMap[row.termID] = row[language];
+        lqaDataMap[row.termID] = row[language];
       }
     });
 
@@ -1044,16 +1167,16 @@ class AdminManager {
     let allMerged = true;
     let checkedTerms = 0;
 
-    for (const mainRow of this.modifiedData) {
-      const termID = mainRow.termID;
-      if (!termID || mainRow.shouldBeTranslated === "FALSE") continue;
+    for (const originalRow of this.originalData) {
+      const termID = originalRow.termID;
+      if (!termID || originalRow.shouldBeTranslated === "FALSE") continue;
 
-      const serverTranslation = serverDataMap[termID];
-      const mainTranslation = mainRow[language];
+      const lqaTranslation = lqaDataMap[termID];
+      const originalTranslation = originalRow[language];
 
-      if (serverTranslation) {
+      if (lqaTranslation) {
         checkedTerms++;
-        if (serverTranslation !== mainTranslation) {
+        if (lqaTranslation !== originalTranslation) {
           allMerged = false;
           break;
         }
@@ -1063,11 +1186,71 @@ class AdminManager {
     return allMerged && checkedTerms > 0;
   }
 
-  displayServerFileStatuses(statuses) {
+  checkIfMerged(serverData, language) {
+    // TODO FIX: Merging the LQA still messes with the merge status
+    // This logic needs to be refined to properly handle LQA merge interactions
+
+    // Create a map of server data by termID
+    const serverDataMap = {};
+    serverData.forEach((row) => {
+      if (row.termID && row[language] && row[language].trim()) {
+        serverDataMap[row.termID] = row[language];
+      }
+    });
+
+    // Get LQA data for this language if available
+    const lqaStatus = this.lqaFileStatuses.find(
+      (status) => status.language === language
+    );
+    const lqaDataMap = {};
+    if (lqaStatus && lqaStatus.lqaData) {
+      lqaStatus.lqaData.forEach((row) => {
+        if (row.termID && row[language] && row[language].trim()) {
+          lqaDataMap[row.termID] = row[language];
+        }
+      });
+    }
+
+    // Check against main sheet data
+    let matchesMainData = true;
+    let matchesMainWithLQA = false;
+    let checkedTerms = 0;
+
+    for (const mainRow of this.modifiedData) {
+      const termID = mainRow.termID;
+      if (!termID || mainRow.shouldBeTranslated === "FALSE") continue;
+
+      const serverTranslation = serverDataMap[termID];
+      const mainTranslation = mainRow[language];
+      const lqaTranslation = lqaDataMap[termID];
+
+      if (serverTranslation) {
+        checkedTerms++;
+
+        // Check if server matches main data
+        if (serverTranslation !== mainTranslation) {
+          matchesMainData = false;
+          // Check if server matches main data with LQA applied (LQA takes precedence)
+          if (lqaTranslation && lqaTranslation === mainTranslation) {
+            matchesMainWithLQA = true;
+          }
+        }
+      }
+    }
+
+    // Return true if either condition is met
+    return checkedTerms > 0 && (matchesMainData || matchesMainWithLQA);
+  }
+
+  displayServerFileStatuses(statuses, lqaStatuses = []) {
     const resultsContainer = document.getElementById("serverFilesResults");
 
     const html = statuses
       .map((status) => {
+        const lqaStatus = lqaStatuses.find(
+          (lqa) => lqa.language === status.language
+        );
+
         let statusClass = "no-file";
         let statusText = "No file on server";
         let actionButtons = "";
@@ -1075,10 +1258,15 @@ class AdminManager {
         if (status.hasFile) {
           if (status.isMerged) {
             statusClass = "merged";
-            statusText = "✅ Merged";
+            // Determine if this is merged with or without LQA
+            if (lqaStatus && lqaStatus.hasLQAFile && lqaStatus.lqaIsMerged) {
+              statusText = "✅ Merged (LQA Merged)";
+            } else {
+              statusText = "✅ Merged (LQA Unmerged)";
+            }
           } else {
             statusClass = "unmerged";
-            statusText = "⚠️ Not merged";
+            statusText = "⚠️ Unmerged";
             actionButtons = `
             <button class="server-file-btn merge" onclick="window.adminManager.mergeServerFile('${status.language}')">
               Merge
@@ -1087,21 +1275,60 @@ class AdminManager {
           }
         }
 
+        // LQA status
+        let lqaStatusText = "";
+        let lqaActionButtons = "";
+        if (lqaStatus && lqaStatus.hasLQAFile) {
+          if (lqaStatus.lqaIsMerged) {
+            lqaStatusText = "✅ LQA Merged";
+          } else {
+            lqaStatusText = "⚠️ LQA Not merged";
+            // Only show LQA merge button if regular language is already merged
+            if (status.hasFile && status.isMerged) {
+              lqaActionButtons = `
+                <button class="server-file-btn merge-lqa" onclick="window.adminManager.mergeLQAFile('${status.language}')">
+                  Merge LQA
+                </button>
+              `;
+            }
+          }
+        } else {
+          lqaStatusText = "No LQA file";
+        }
+
         const fileDetails = status.fileInfo
           ? `${Math.round(status.fileInfo.size / 1024)} KB • Uploaded: ${
               status.fileInfo.uploaded
             }`
           : "No file available";
 
+        const lqaFileDetails =
+          lqaStatus && lqaStatus.lqaFileInfo
+            ? `LQA: ${Math.round(
+                lqaStatus.lqaFileInfo.size / 1024
+              )} KB • Uploaded: ${lqaStatus.lqaFileInfo.uploaded}`
+            : "";
+
         return `
         <div class="server-file-item ${statusClass}">
           <div class="server-file-info">
             <div class="server-file-name">${status.language}</div>
             <div class="server-file-details">${fileDetails}</div>
+            ${
+              lqaFileDetails
+                ? `<div class="server-file-details lqa-details">${lqaFileDetails}</div>`
+                : ""
+            }
             <div class="server-file-status ${statusClass}">${statusText}</div>
+            ${
+              lqaStatusText
+                ? `<div class="server-file-status lqa-status">${lqaStatusText}</div>`
+                : ""
+            }
           </div>
           <div class="server-file-actions">
             ${actionButtons}
+            ${lqaActionButtons}
           </div>
         </div>
       `;
@@ -1136,6 +1363,33 @@ class AdminManager {
     }
   }
 
+  async mergeLQAFile(language) {
+    try {
+      this.showStatus(`Merging LQA file for ${language}...`);
+
+      const lqaStatus = this.lqaFileStatuses.find(
+        (status) => status.language === language
+      );
+      if (!lqaStatus || !lqaStatus.hasLQAFile || !lqaStatus.lqaData) {
+        throw new Error("No LQA file available to merge");
+      }
+
+      this.mergeLanguageData(lqaStatus.lqaData, language);
+
+      // Refresh the displays
+      this.displayDataOverview();
+      await this.fetchAllServerFiles();
+
+      // Show download section since we have changes
+      document.getElementById("downloadSection").classList.remove("hidden");
+
+      this.showStatus(`Successfully merged LQA translations for ${language}`);
+      setTimeout(() => this.hideStatus(), 2000);
+    } catch (error) {
+      this.showStatus(`Error merging LQA for ${language}: ${error.message}`);
+    }
+  }
+
   async mergeAllUnmergedFiles() {
     this.showStatus("Merging all unmerged server files...");
 
@@ -1166,6 +1420,42 @@ class AdminManager {
       }
     } catch (error) {
       this.showStatus(`Error merging files: ${error.message}`);
+    }
+  }
+
+  async mergeAllUnmergedLQAFiles() {
+    this.showStatus("Merging all unmerged LQA files...");
+
+    try {
+      let mergedCount = 0;
+
+      for (const lqaStatus of this.lqaFileStatuses) {
+        if (
+          lqaStatus.hasLQAFile &&
+          !lqaStatus.isLQAMerged &&
+          lqaStatus.lqaData
+        ) {
+          this.mergeLanguageData(lqaStatus.lqaData, lqaStatus.language);
+          mergedCount++;
+        }
+      }
+
+      if (mergedCount > 0) {
+        // Refresh displays
+        this.displayDataOverview();
+        await this.fetchAllServerFiles();
+
+        // Show download section since we have changes
+        document.getElementById("downloadSection").classList.remove("hidden");
+
+        this.showStatus(`Successfully merged ${mergedCount} LQA files`);
+        setTimeout(() => this.hideStatus(), 3000);
+      } else {
+        this.showStatus("No unmerged LQA files found to merge");
+        setTimeout(() => this.hideStatus(), 2000);
+      }
+    } catch (error) {
+      this.showStatus(`Error merging LQA files: ${error.message}`);
     }
   }
 
