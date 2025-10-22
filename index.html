@@ -36,7 +36,6 @@
 
       .header {
         text-align: center;
-        margin-bottom: 3rem;
       }
 
       .header h1 {
@@ -136,7 +135,7 @@
       }
 
       .hidden {
-        display: none;
+        display: none !important;
       }
 
       .add-language-form {
@@ -461,12 +460,112 @@
       .report-actions .btn {
         margin-right: 0;
       }
+
+      /* Original sheet link styles */
+      .original-sheet-link {
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+
+      .original-sheet-link a {
+        color: var(--link-color);
+        text-decoration: none;
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--link-color);
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        display: inline-block;
+      }
+
+      .original-sheet-link a:hover {
+        background: var(--link-color);
+        color: var(--bg-color);
+      }
+
+      /* Tutorial styles */
+      .tutorial-section {
+        max-width: 600px;
+        margin: 2rem auto 0;
+      }
+
+      .tutorial-toggle {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        background: transparent;
+        border: none;
+        color: var(--text-color);
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: opacity 0.2s ease;
+      }
+
+      .tutorial-toggle:hover {
+        opacity: 0.8;
+      }
+
+      .tutorial-toggle .icon {
+        font-size: 1.2rem;
+        transition: transform 0.3s ease;
+      }
+
+      .tutorial-toggle.expanded .icon {
+        transform: rotate(180deg);
+      }
+
+      .tutorial-content {
+        display: none;
+        padding: 0 1.5rem 1.5rem;
+        color: var(--text-color);
+        opacity: 0.9;
+      }
+
+      .tutorial-content.show {
+        display: block;
+      }
+
+      .tutorial-step {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: var(--secondary-bg);
+        border-radius: 6px;
+        border-left: 4px solid var(--link-color);
+      }
+
+      .tutorial-step h4 {
+        color: var(--link-color);
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+      }
+
+      .tutorial-step p {
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+      }
+
+      .tutorial-step ul {
+        margin-left: 1rem;
+        line-height: 1.5;
+      }
+
+      .tutorial-step li {
+        margin-bottom: 0.3rem;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
         <h1>NPO Localisation Manager</h1>
+      </div>
+
+      <div class="original-sheet-link">
+        <a href="#" id="originalSheetLink" target="_blank" class="hidden">
+          Open Main Translation Sheet
+        </a>
       </div>
 
       <div id="status" class="status hidden"></div>
@@ -513,6 +612,103 @@
           <button class="btn" id="backToLanguageBtn">
             ← Back to Language Selection
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tutorial Section -->
+    <div class="tutorial-section">
+      <button class="tutorial-toggle" id="tutorialToggle">
+        <span>How to Use This Tool</span>
+        <span class="icon">▼</span>
+      </button>
+      <div class="tutorial-content" id="tutorialContent">
+        <div class="tutorial-step">
+          <h4>1. Select Your Language</h4>
+          <p>
+            Choose the language you want to work with from the dropdown menu.
+          </p>
+        </div>
+
+        <div class="tutorial-step">
+          <h4>2. Download Latest Version (Optional)</h4>
+          <p>
+            Before starting, you can download the latest version of the
+            translation file to see what's already been translated and what
+            needs work.
+          </p>
+        </div>
+
+        <div class="tutorial-step">
+          <h4>3. Upload Your Translation File</h4>
+          <p>Upload your CSV translation file by either:</p>
+          <ul>
+            <li>
+              <strong>Drag & Drop:</strong> Simply drag your CSV file onto the
+              drop zone
+            </li>
+            <li>
+              <strong>Click to Browse:</strong> Click on the drop zone to open a
+              file picker
+            </li>
+          </ul>
+        </div>
+
+        <div class="tutorial-step">
+          <h4>4. Review Translation Report</h4>
+          <p>The system will analyze your file and show you:</p>
+          <ul>
+            <li>
+              <strong>Missing Terms:</strong> Terms where the translation
+              doesn't exist
+            </li>
+            <li>
+              <strong>Missing Terms Found in Latest:</strong> Terms missing from
+              your file but already translated in the latest data
+            </li>
+            <li>
+              <strong>Terms Needing Updates:</strong> Terms where the English
+              text has changed compared to your file, so most likely the
+              translation needs to be updated
+            </li>
+          </ul>
+          <br />
+
+          <h4>Use the Diff Viewer</h4>
+          <p>
+            For terms that need updates, a detailed diff of the changes to the
+            english text is provided.
+          </p>
+        </div>
+
+        <div class="tutorial-step">
+          <h4>5. Download Updated File</h4>
+          <p>
+            Once you've reviewed the report, download the updated CSV file. This
+            file includes:
+          </p>
+          <ul>
+            <li>Your existing translations</li>
+            <li>Any extra translations found in the latest data</li>
+            <li>
+              Up to date terms list and their english versions according to the
+              latest data
+            </li>
+          </ul>
+          <br />
+          <p>The file will also remove any unneeded data, such as:</p>
+          <ul>
+            <li>Terms that were removed from the latest data</li>
+            <li>Any other languages found in your file</li>
+          </ul>
+        </div>
+
+        <div class="tutorial-step">
+          <h4>6. Congratulations!</h4>
+          <p>
+            Once the report says everything is good, you can send the updated
+            file to the development team for integration into the game.
+          </p>
         </div>
       </div>
     </div>

@@ -46,9 +46,15 @@ class LocalisationManager {
     document
       .getElementById("backToLanguageBtn")
       .addEventListener("click", () => this.goBackToLanguageSelection());
+    document
+      .getElementById("tutorialToggle")
+      .addEventListener("click", () => this.toggleTutorial());
 
     // Set up drag and drop
     this.setupDragAndDrop();
+
+    // Set up original sheet link
+    this.setupOriginalSheetLink();
   }
 
   async fetchDataAutomatically() {
@@ -393,12 +399,9 @@ class LocalisationManager {
         <div class="report">
           <h4>🎉 Translation Complete!</h4>
           <p style="color: var(--link-color); font-size: 1.1rem; margin-bottom: 1rem;">
-            <strong>Excellent work!</strong> All translations are up to date.
+            <strong>Excellent work!</strong> The translation data has been validated.
           </p>
           <p>Your translation file is complete and ready for use. Please download the final file and send it to the development team.</p>
-          <p style="margin-top: 1rem; padding: 1rem; background: var(--secondary-bg); border-radius: 4px; border-left: 4px solid var(--link-color);">
-            📧 <strong>Next step:</strong> Download the file below and send it to the project maintainer.
-          </p>
         </div>
       `;
       reportContent.innerHTML = html;
@@ -710,6 +713,22 @@ class LocalisationManager {
 
     // Go back to step 2 (language selection)
     this.showStep(2);
+  }
+
+  setupOriginalSheetLink() {
+    const originalSheetLink = document.getElementById("originalSheetLink");
+    if (CONFIG.ORIGINAL_SHEET_URL && CONFIG.ORIGINAL_SHEET_URL.trim()) {
+      originalSheetLink.href = CONFIG.ORIGINAL_SHEET_URL;
+      originalSheetLink.classList.remove("hidden");
+    }
+  }
+
+  toggleTutorial() {
+    const tutorialContent = document.getElementById("tutorialContent");
+    const tutorialToggle = document.getElementById("tutorialToggle");
+
+    tutorialContent.classList.toggle("show");
+    tutorialToggle.classList.toggle("expanded");
   }
 
   showStatus(message) {
