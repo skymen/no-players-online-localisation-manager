@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSV/XLSX Converter Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+      }
+      .section {
+        margin: 30px 0;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+      }
+      h2 {
+        color: #333;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 10px 5px 10px 0;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      input[type="file"] {
+        margin: 10px 0;
+      }
+      textarea {
+        width: 100%;
+        height: 150px;
+        font-family: monospace;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .progress {
+        margin: 10px 0;
+        color: #666;
+      }
+      .error {
+        color: #dc3545;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CSV/XLSX Converter Demo</h1>
+
+    <!-- CSV to XLSX Section -->
+    <div class="section">
+      <h2>CSV to XLSX Converter</h2>
+      <textarea id="csvInput" placeholder="Paste CSV data here...">
+termID,notes,shouldBeTranslated,translationNeedsToBeUpdated,English
+T001,First term,true,false,Hello
+T002,Second term,true,true,World
+T003,Third term,false,false,Example</textarea
+      >
+      <br />
+      <button onclick="convertCsvToXlsx()">Convert to XLSX</button>
+      <button onclick="convertCsvToXlsxBlob()">
+        Convert to XLSX (Return Blob)
+      </button>
+      <div id="csvProgress" class="progress"></div>
+      <div id="csvError" class="error"></div>
+    </div>
+
+    <!-- XLSX to CSV Section -->
+    <div class="section">
+      <h2>XLSX to CSV Converter</h2>
+      <input type="file" id="xlsxInput" accept=".xlsx,.xls" />
+      <br />
+      <button onclick="convertXlsxToCsv()">Convert to CSV (Download)</button>
+      <button onclick="convertXlsxToCsvString()">
+        Convert to CSV (Show String)
+      </button>
+      <div id="xlsxProgress" class="progress"></div>
+      <div id="xlsxError" class="error"></div>
+      <textarea
+        id="csvOutput"
+        placeholder="CSV output will appear here..."
+        readonly
+      ></textarea>
+    </div>
+
+    <script type="module">
+      import { csvToXlsx, xlsxToCsv } from "./converter.js";
+
+      // Expected headers for your use case
+      const EXPECTED_HEADERS = [
+        "termID",
+        "notes",
+        "shouldBeTranslated",
+        "translationNeedsToBeUpdated",
+        "English",
+      ];
+
+      // Convert CSV to XLSX and trigger download
+      async function convertCsvToXlsx() {
+        const csvData = document.getElementById("csvInput").value;
+        const progressDiv = document.getElementById("csvProgress");
+        const errorDiv = document.getElementById("csvError");
+
+        errorDiv.textContent = "";
+        progressDiv.textContent = "Converting...";
+
+        try {
+          await csvToXlsx(csvData, {
+            filename: "output.xlsx",
+            title: "Translation Data",
+            creator: "CSV Converter",
+            onProgress: (progress) => {
+              progressDiv.textContent = `Progress: ${progress}%`;
+            },
+          });
+          progressDiv.textContent = "Download started!";
+        } catch (error) {
+          errorDiv.textContent = `Error: ${error.message}`;
+          progressDiv.textContent = "";
+        }
+      }
+
+      async function convertCsvToXlsxBlob() {
+        const csvData = document.getElementById("csvInput").value;
+        const progressDiv = document.getElementById("csvProgress");
+        const errorDiv = document.getElementById("csvError");
+
+        errorDiv.textContent = "";
+        progressDiv.textContent = "Converting...";
+
+        try {
+          const blob = await csvToXlsx(csvData, {
+            filename: "output.xlsx",
+            title: "Translation Data",
+            creator: "CSV Converter",
+            returnBlob: true,
+            onProgress: (progress) => {
+              progressDiv.textContent = `Progress: ${progress}%`;
+            },
+          });
+          progressDiv.textContent = `Blob created! Size: ${blob.size} bytes`;
+          console.log("Blob:", blob);
+        } catch (error) {
+          errorDiv.textContent = `Error: ${error.message}`;
+          progressDiv.textContent = "";
+        }
+      }
+
+      async function convertXlsxToCsv() {
+        const fileInput = document.getElementById("xlsxInput");
+        const progressDiv = document.getElementById("xlsxProgress");
+        const errorDiv = document.getElementById("xlsxError");
+
+        if (!fileInput.files || !fileInput.files[0]) {
+          errorDiv.textContent = "Please select a file first";
+          return;
+        }
+
+        errorDiv.textContent = "";
+        progressDiv.textContent = "Converting...";
+
+        try {
+          await xlsxToCsv(fileInput.files[0], {
+            expectedHeaders: EXPECTED_HEADERS,
+            filename: "output.csv",
+            onProgress: (progress) => {
+              progressDiv.textContent = `Progress: ${progress}%`;
+            },
+          });
+          progressDiv.textContent = "Download started!";
+        } catch (error) {
+          errorDiv.textContent = `Error: ${error.message}`;
+          progressDiv.textContent = "";
+        }
+      }
+
+      async function convertXlsxToCsvString() {
+        const fileInput = document.getElementById("xlsxInput");
+        const progressDiv = document.getElementById("xlsxProgress");
+        const errorDiv = document.getElementById("xlsxError");
+        const outputTextarea = document.getElementById("csvOutput");
+
+        if (!fileInput.files || !fileInput.files[0]) {
+          errorDiv.textContent = "Please select a file first";
+          return;
+        }
+
+        errorDiv.textContent = "";
+        progressDiv.textContent = "Converting...";
+
+        try {
+          const csvString = await xlsxToCsv(fileInput.files[0], {
+            expectedHeaders: EXPECTED_HEADERS,
+            returnString: true,
+            onProgress: (progress) => {
+              progressDiv.textContent = `Progress: ${progress}%`;
+            },
+          });
+          outputTextarea.value = csvString;
+          progressDiv.textContent = "Conversion complete!";
+        } catch (error) {
+          errorDiv.textContent = `Error: ${error.message}`;
+          progressDiv.textContent = "";
+        }
+      }
+
+      // Expose functions to window for onclick handlers
+      window.convertCsvToXlsx = convertCsvToXlsx;
+      window.convertCsvToXlsxBlob = convertCsvToXlsxBlob;
+      window.convertXlsxToCsv = convertXlsxToCsv;
+      window.convertXlsxToCsvString = convertXlsxToCsvString;
+    </script>
+  </body>
+</html>
