@@ -891,14 +891,19 @@
           </div>
 
           <!-- Hidden file input for direct access -->
-          <input type="file" id="fileInput" accept=".csv" class="hidden" />
+          <input
+            type="file"
+            id="fileInput"
+            accept=".csv,.xlsx"
+            class="hidden"
+          />
         </div>
 
         <!-- Drag and drop area -->
         <div class="drop-zone hidden" id="dropZone">
           <div class="drop-zone-content">
-            <p>Drop your CSV file here to validate</p>
-            <p class="drop-zone-subtitle">or click here to browse for a file</p>
+            <p>Drop your CSV or XLSX file here to validate</p>
+            <p class="drop-zone-subtitle">or click to browse for a file</p>
           </div>
         </div>
       </div>
@@ -969,11 +974,11 @@
 
           <div class="tutorial-step">
             <h4>3. Upload Your Translation File</h4>
-            <p>Upload your CSV translation file by either:</p>
+            <p>Upload your CSV or XLSX translation file by either:</p>
             <ul>
               <li>
-                <strong>Drag & Drop:</strong> Simply drag your CSV file onto the
-                drop zone
+                <strong>Drag & Drop:</strong> Simply drag your CSV or XLSX file
+                onto the drop zone
               </li>
               <li>
                 <strong>Click to Browse:</strong> Click on the drop zone to open
@@ -982,10 +987,11 @@
             </ul>
             <br />
 
-            <h4>Make sure to use CSV</h4>
+            <h4>File Format Support</h4>
             <p>
-              If you were working in Google Sheets, Excel or any other format,
-              make sure to export the localisation sheet to CSV
+              The tool supports both CSV and XLSX (Excel) files. If you were
+              working in Google Sheets, you can export as either CSV or Excel
+              format - both will work.
             </p>
           </div>
 
@@ -1046,8 +1052,8 @@
           <div class="tutorial-step">
             <h4>6. Download Updated File</h4>
             <p>
-              Once you've reviewed the report, download the updated CSV file.
-              This file includes:
+              Once you've reviewed the report, download the updated file in
+              either CSV or XLSX format. This file includes:
             </p>
             <ul>
               <li>Your existing translations</li>
@@ -1101,11 +1107,11 @@
 
           <div class="tutorial-step">
             <h4>3. Upload Your LQA File</h4>
-            <p>Upload your CSV LQA file by either:</p>
+            <p>Upload your CSV or XLSX LQA file by either:</p>
             <ul>
               <li>
-                <strong>Drag & Drop:</strong> Simply drag your CSV file onto the
-                drop zone
+                <strong>Drag & Drop:</strong> Simply drag your CSV or XLSX file
+                onto the drop zone
               </li>
               <li>
                 <strong>Click to Browse:</strong> Click on the drop zone to open
@@ -1145,6 +1151,7 @@
 
     <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/diff@5.1.0/dist/diff.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
       // Global function for copying text to clipboard
       window.copyToClipboard = async function (text, type, buttonElement) {

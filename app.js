@@ -11,7 +11,7 @@ import {
   generateCharDiff,
   generateEnhancedLineDiff,
 } from "./diffModule.js";
-import { csvToXlsx } from "./csv2xslx.js";
+import { csvToXlsx, xlsxToCsv } from "./converter.js";
 
 class LocalisationManager {
   constructor() {
@@ -413,8 +413,12 @@ class LocalisationManager {
   }
 
   async processFile(file) {
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      alert("Please upload a CSV file");
+    const fileName = file.name.toLowerCase();
+    const isCSV = fileName.endsWith(".csv");
+    const isXLSX = fileName.endsWith(".xlsx");
+
+    if (!isCSV && !isXLSX) {
+      alert("Please upload a CSV or XLSX file");
       return;
     }
 
@@ -424,7 +428,34 @@ class LocalisationManager {
       // Reset flag since this is a user upload
       this.isValidatingServerFile = false;
 
-      const csvText = await this.readFileAsText(file);
+      let csvText;
+
+      if (isXLSX) {
+        // Convert XLSX to CSV first
+        this.showStatus("Converting XLSX to CSV...");
+
+        const expectedHeaders = [
+          "termID",
+          "notes",
+          "shouldBeTranslated",
+          "translationNeedsToBeUpdated",
+          "English",
+        ];
+        csvText = await xlsxToCsv(file, {
+          expectedHeaders: expectedHeaders,
+          findMatchingSheet: true,
+          returnString: true,
+          onProgress: (progress) => {
+            this.showStatus(`Converting XLSX to CSV... ${progress}%`);
+          },
+        });
+
+        this.showStatus("Processing converted CSV data...");
+      } else {
+        // Read CSV file directly
+        csvText = await this.readFileAsText(file);
+      }
+
       this.uploadedData = parseCSV(csvText);
 
       // Check for LQA comparison if not in LQA mode
@@ -917,19 +948,50 @@ class LocalisationManager {
     const file = fileInput.files[0];
 
     if (!file) {
-      alert("Please select a CSV file");
+      alert("Please select a CSV or XLSX file");
       return;
     }
 
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      alert("Please upload a CSV file");
+    const fileName = file.name.toLowerCase();
+    const isCSV = fileName.endsWith(".csv");
+    const isXLSX = fileName.endsWith(".xlsx");
+
+    if (!isCSV && !isXLSX) {
+      alert("Please upload a CSV or XLSX file");
       return;
     }
 
     this.showStatus("Processing uploaded file...");
 
     try {
-      const csvText = await this.readFileAsText(file);
+      let csvText;
+
+      if (isXLSX) {
+        // Convert XLSX to CSV first
+        this.showStatus("Converting XLSX to CSV...");
+
+        const expectedHeaders = [
+          "termID",
+          "notes",
+          "shouldBeTranslated",
+          "translationNeedsToBeUpdated",
+          "English",
+        ];
+        csvText = await xlsxToCsv(file, {
+          expectedHeaders: expectedHeaders,
+          findMatchingSheet: true,
+          returnString: true,
+          onProgress: (progress) => {
+            this.showStatus(`Converting XLSX to CSV... ${progress}%`);
+          },
+        });
+
+        this.showStatus("Processing converted CSV data...");
+      } else {
+        // Read CSV file directly
+        csvText = await this.readFileAsText(file);
+      }
+
       this.uploadedData = parseCSV(csvText);
       const report = this.compareAndGenerateReport();
       this.displayReport(report);
