@@ -509,6 +509,94 @@ class AdminManager {
       .replace(/\r/g, "\\r");
   }
 
+  escapeForTextarea(text) {
+    // For textarea content, we just need to escape HTML entities that could break the HTML structure
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  generateUpdatedTermsHTML(updatedTerms) {
+    return updatedTerms
+      .map((item, index) => {
+        const diffSummary = getDiffSummary(item.oldText, item.newText);
+
+        // Check if this is multiline
+        const isMultiline = true;
+
+        let diffContent = "";
+
+        if (isMultiline) {
+          // For multiline: Use enhanced diff
+          const enhancedDiff = generateEnhancedLineDiff(
+            item.oldText,
+            item.newText
+          );
+          const enhancedHTML = this.generateEnhancedDiffHTML(enhancedDiff);
+
+          diffContent = `
+            <div class="diff-container">
+              ${enhancedHTML}
+            </div>
+          `;
+        } else {
+          // For single-line: Use character diff
+          const charDiff = generateCharDiff(
+            item.oldText || "",
+            item.newText || ""
+          );
+          const charDiffHTML = this.generateCharDiffHTML(charDiff);
+
+          diffContent = `
+            <div class="diff-container">
+              ${charDiffHTML}
+            </div>
+          `;
+        }
+
+        return `
+          <div class="term-diff-item">
+            <div class="term-diff-title">
+              📝 ${item.termID}
+            </div>
+            <div class="diff-summary">
+              ${diffSummary.message}
+            </div>
+            <button class="translation-toggle" id="translation-toggle-${
+              item.termID
+            }" onclick="toggleTranslation('${item.termID}')">
+              Show Current Translation
+            </button>
+            <div class="translation-content" id="translation-content-${
+              item.termID
+            }">
+              <textarea class="translation-textarea" readonly>${this.escapeForTextarea(
+                item.userTranslation
+              )}</textarea>
+            </div>
+            <div class="diff-header">
+              <span class="diff-label">English Text Changes</span>
+              <div class="copy-buttons">
+                <button class="copy-btn" onclick="copyToClipboard(\`${this.escapeForAttribute(
+                  item.oldText || ""
+                )}\`, 'old', this)" title="Copy original text">
+                  📋 Copy Old
+                </button>
+                <button class="copy-btn" onclick="copyToClipboard(\`${this.escapeForAttribute(
+                  item.newText || ""
+                )}\`, 'new', this)" title="Copy new text">
+                  📋 Copy New
+                </button>
+              </div>
+            </div>
+            ${diffContent}
+          </div>
+        `;
+      })
+      .join("");
+  }
+
   // Test function to verify diff functionality
   runDiffTests() {
     console.log("🧪 Running Diff Tests...");
@@ -1545,52 +1633,32 @@ class AdminManager {
     const content = document.createElement("div");
     content.style.cssText = `
       background: var(--secondary-bg); padding: 2rem; border-radius: 8px;
-      max-width: 80%; max-height: 80%; overflow-y: auto; color: var(--text-color);
+      max-width: 90%; max-height: 80%; overflow-y: auto; color: var(--text-color);
     `;
+
+    // Convert outdated terms to the same format used by generateUpdatedTermsHTML
+    const updatedTermsFormat = outdatedTerms.map((term) => ({
+      termID: term.termID,
+      oldText: term.serverEnglish,
+      newText: term.mainEnglish,
+      userTranslation: term.currentTranslation,
+    }));
 
     let htmlContent = `
-      <h3 style="color: var(--link-color); margin-bottom: 1rem;">
-        Outdated Terms for ${language} (${outdatedTerms.length})
-      </h3>
-      <p style="margin-bottom: 1rem; opacity: 0.8;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="color: var(--link-color); margin: 0;">
+          Outdated Terms for ${language} (${outdatedTerms.length})
+        </h3>
+        <button style="padding: 0.5rem 1rem; background: var(--accent-color); 
+                       color: var(--text-color); border: none; border-radius: 4px; cursor: pointer;"
+                onclick="this.closest('.modal').remove()">
+          Close
+        </button>
+      </div>
+      <p style="margin-bottom: 1.5rem; opacity: 0.8;">
         These terms have different English text in the server file compared to the main sheet:
       </p>
-    `;
-
-    outdatedTerms.forEach((term) => {
-      htmlContent += `
-        <div style="background: var(--bg-color); padding: 1rem; margin-bottom: 1rem; border-radius: 6px; border: 1px solid var(--accent-color);">
-          <div style="font-weight: 600; color: var(--link-color); margin-bottom: 0.5rem;">
-            ${term.termID}
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <strong>Server English:</strong><br>
-            <code style="background: var(--secondary-bg); padding: 0.25rem; border-radius: 3px;">${this.escapeHtml(
-              term.serverEnglish
-            )}</code>
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <strong>Current English:</strong><br>
-            <code style="background: var(--secondary-bg); padding: 0.25rem; border-radius: 3px;">${this.escapeHtml(
-              term.mainEnglish
-            )}</code>
-          </div>
-          <div>
-            <strong>Current Translation:</strong><br>
-            <code style="background: var(--secondary-bg); padding: 0.25rem; border-radius: 3px;">${this.escapeHtml(
-              term.currentTranslation
-            )}</code>
-          </div>
-        </div>
-      `;
-    });
-
-    htmlContent += `
-      <button style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--accent-color); 
-                     color: var(--text-color); border: none; border-radius: 4px; cursor: pointer;"
-              onclick="this.closest('.modal').remove()">
-        Close
-      </button>
+      ${this.generateUpdatedTermsHTML(updatedTermsFormat)}
     `;
 
     content.innerHTML = htmlContent;
