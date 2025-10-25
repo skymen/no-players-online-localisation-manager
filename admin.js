@@ -11,6 +11,7 @@ import {
   generateCharDiff,
   generateEnhancedLineDiff,
 } from "./diffModule.js";
+import { checkIfMerged, checkIfLQAMerged } from "./mergeChecker.js";
 
 class AdminManager {
   constructor() {
@@ -1163,88 +1164,17 @@ class AdminManager {
   }
 
   checkIfLQAMerged(lqaData, language) {
-    // Check if LQA translations have been merged into the main sheet
-    const lqaDataMap = {};
-    lqaData.forEach((row) => {
-      if (row.termID && row[language] && row[language].trim()) {
-        lqaDataMap[row.termID] = row[language];
-      }
-    });
-
-    // Check against main sheet data
-    let allMerged = true;
-    let checkedTerms = 0;
-
-    for (const originalRow of this.originalData) {
-      const termID = originalRow.termID;
-      if (!termID || originalRow.shouldBeTranslated === "FALSE") continue;
-
-      const lqaTranslation = lqaDataMap[termID];
-      const originalTranslation = originalRow[language];
-
-      if (lqaTranslation) {
-        checkedTerms++;
-        if (lqaTranslation !== originalTranslation) {
-          allMerged = false;
-          break;
-        }
-      }
-    }
-
-    return allMerged && checkedTerms > 0;
+    return checkIfLQAMerged(lqaData, language, this.originalData);
   }
 
   checkIfMerged(serverData, language) {
-    // Create a map of server data by termID
-    const serverDataMap = {};
-    serverData.forEach((row) => {
-      if (row.termID && row[language] && row[language].trim()) {
-        serverDataMap[row.termID] = row[language];
-      }
-    });
-
     // Get LQA data for this language if available
     const lqaStatus = this.lqaFileStatuses.find(
       (status) => status.language === language
     );
-    const lqaDataMap = {};
-    if (lqaStatus && lqaStatus.lqaData) {
-      lqaStatus.lqaData.forEach((row) => {
-        if (row.termID && row[language] && row[language].trim()) {
-          lqaDataMap[row.termID] = row[language];
-        }
-      });
-    }
+    const lqaData = lqaStatus && lqaStatus.lqaData ? lqaStatus.lqaData : null;
 
-    // Check against main sheet data
-    let matchesMainData = true;
-    let matchesMainWithLQA = false;
-    let checkedTerms = 0;
-
-    for (const mainRow of this.modifiedData) {
-      const termID = mainRow.termID;
-      if (!termID || mainRow.shouldBeTranslated === "FALSE") continue;
-
-      const serverTranslation = serverDataMap[termID];
-      const mainTranslation = mainRow[language];
-      const lqaTranslation = lqaDataMap[termID];
-
-      if (serverTranslation) {
-        checkedTerms++;
-
-        // Check if server matches main data
-        if (serverTranslation !== mainTranslation) {
-          matchesMainData = false;
-          // Check if server matches main data with LQA applied (LQA takes precedence)
-          if (lqaTranslation && lqaTranslation === mainTranslation) {
-            matchesMainWithLQA = true;
-          }
-        }
-      }
-    }
-
-    // Return true if either condition is met
-    return checkedTerms > 0 && (matchesMainData || matchesMainWithLQA);
+    return checkIfMerged(serverData, language, this.modifiedData, lqaData);
   }
 
   displayServerFileStatuses(statuses, lqaStatuses = []) {

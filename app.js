@@ -12,6 +12,7 @@ import {
   generateEnhancedLineDiff,
 } from "./diffModule.js";
 import { csvToXlsx, xlsxToCsv } from "./converter.js";
+import { checkMergeStatus } from "./mergeChecker.js";
 
 class LocalisationManager {
   constructor() {
@@ -1767,38 +1768,23 @@ class LocalisationManager {
   }
 
   async checkMergeStatus(serverData, languageName) {
-    // Create a map of server data by termID
-    const serverDataMap = {};
-    serverData.forEach((row) => {
-      if (row.termID && row[languageName] && row[languageName].trim()) {
-        serverDataMap[row.termID] = row[languageName];
-      }
-    });
+    // If we're not in LQA mode, try to get LQA data for this language
+    let lqaData = null;
+    const isLqaMode = document.getElementById("lqaCheckbox").checked;
 
-    // Check against main sheet data
-    let allMerged = true;
-    let checkedTerms = 0;
-
-    for (const latestRow of this.data) {
-      const termID = latestRow.termID;
-      if (!termID || latestRow.shouldBeTranslated === "FALSE") continue;
-
-      const serverTranslation = serverDataMap[termID];
-      const latestTranslation = latestRow[languageName];
-
-      if (serverTranslation) {
-        checkedTerms++;
-        if (serverTranslation !== latestTranslation) {
-          allMerged = false;
-          break;
-        }
+    if (!isLqaMode) {
+      try {
+        const lqaFileId = `LQA_${languageName}`;
+        const lqaCsvContent = await this.downloadServerFile(lqaFileId);
+        lqaData = parseCSV(lqaCsvContent);
+      } catch (error) {
+        // LQA file doesn't exist or can't be fetched - this is normal
+        console.log("No LQA file found or error fetching LQA file:", error);
+        lqaData = null;
       }
     }
 
-    return {
-      isMerged: allMerged && checkedTerms > 0,
-      checkedTerms,
-    };
+    return checkMergeStatus(serverData, languageName, this.data, lqaData);
   }
 
   showStatus(message) {
