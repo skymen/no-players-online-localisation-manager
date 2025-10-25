@@ -1195,9 +1195,6 @@ class AdminManager {
   }
 
   checkIfMerged(serverData, language) {
-    // TODO FIX: Merging the LQA still messes with the merge status
-    // This logic needs to be refined to properly handle LQA merge interactions
-
     // Create a map of server data by termID
     const serverDataMap = {};
     serverData.forEach((row) => {
