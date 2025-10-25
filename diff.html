@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diff Tool</title>
+    <style>
+      :root {
+        --accent-color: #555e54;
+        --link-color: #55bfd9;
+        --button-bg: #007592;
+        --secondary-bg: #232121;
+        --bg-color: #000000;
+        --text-color: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: var(--bg-color);
+        color: var(--text-color);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: var(--link-color);
+      }
+
+      .subtitle {
+        color: var(--text-color);
+        opacity: 0.8;
+        font-size: 1rem;
+      }
+
+      .upload-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .upload-card {
+        background: var(--secondary-bg);
+        border-radius: 8px;
+        padding: 1.5rem;
+      }
+
+      .upload-card h2 {
+        color: var(--link-color);
+        margin-bottom: 1rem;
+        font-size: 1.25rem;
+        text-align: center;
+      }
+
+      .upload-area {
+        border: 2px dashed var(--accent-color);
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: var(--bg-color);
+        margin-bottom: 1rem;
+      }
+
+      .upload-area:hover {
+        border-color: var(--link-color);
+      }
+
+      .upload-area.dragover {
+        border-color: var(--link-color);
+        background: rgba(85, 191, 217, 0.1);
+      }
+
+      .upload-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .file-info {
+        background: var(--bg-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 4px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        display: none;
+      }
+
+      .file-info.show {
+        display: block;
+      }
+
+      .file-name {
+        font-weight: 600;
+        color: var(--link-color);
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+      }
+
+      .file-size {
+        color: var(--text-color);
+        opacity: 0.8;
+        font-size: 0.8rem;
+      }
+
+      .options-section {
+        background: var(--secondary-bg);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .options-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .option-group {
+        margin-bottom: 1rem;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--link-color);
+        font-weight: 500;
+        font-size: 0.9rem;
+      }
+
+      select,
+      input[type="text"] {
+        width: 100%;
+        padding: 0.75rem;
+        background: var(--bg-color);
+        color: var(--text-color);
+        border: 2px solid var(--accent-color);
+        border-radius: 4px;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+      }
+
+      select:focus,
+      input[type="text"]:focus {
+        outline: none;
+        border-color: var(--link-color);
+      }
+
+      .button-group {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+      }
+
+      .btn {
+        padding: 0.75rem 1.5rem;
+        background: var(--accent-color);
+        color: var(--text-color);
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+        min-width: 120px;
+      }
+
+      .btn:hover {
+        opacity: 0.8;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-compare {
+        background: var(--button-bg);
+      }
+
+      .status {
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        background: var(--secondary-bg);
+        border-left: 4px solid var(--link-color);
+        display: none;
+      }
+
+      .status.show {
+        display: block;
+      }
+
+      .status.success {
+        border-left-color: #28a745;
+      }
+
+      .status.error {
+        border-left-color: #dc3545;
+      }
+
+      .status.info {
+        border-left-color: var(--link-color);
+      }
+
+      .results-section {
+        background: var(--secondary-bg);
+        border-radius: 8px;
+        padding: 1.5rem;
+        display: none;
+      }
+
+      .results-section.show {
+        display: block;
+      }
+
+      .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--accent-color);
+      }
+
+      .results-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--link-color);
+      }
+
+      .diff-stats {
+        background: var(--bg-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+      }
+
+      .stat-item {
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0.25rem;
+      }
+
+      .stat-value.added {
+        color: #4caf50;
+      }
+      .stat-value.removed {
+        color: #f44336;
+      }
+      .stat-value.modified {
+        color: #ff9800;
+      }
+      .stat-value.unchanged {
+        color: var(--text-color);
+        opacity: 0.7;
+      }
+      .stat-value.newline-only {
+        color: #9c27b0;
+      }
+
+      .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-color);
+        text-transform: uppercase;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        opacity: 0.8;
+      }
+
+      .diff-view-controls {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+      }
+
+      .view-btn {
+        padding: 0.5rem 1rem;
+        background: var(--accent-color);
+        color: var(--text-color);
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: opacity 0.2s ease;
+      }
+
+      .view-btn.active {
+        background: var(--button-bg);
+      }
+
+      .view-btn:hover {
+        opacity: 0.8;
+      }
+
+      .diff-container {
+        border: 1px solid var(--accent-color);
+        border-radius: 6px;
+        max-height: 600px;
+        overflow: auto;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 0.8rem;
+        line-height: 1.4;
+        background: var(--bg-color);
+      }
+
+      .diff-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .diff-table th {
+        background: var(--secondary-bg);
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--link-color);
+        border-bottom: 2px solid var(--accent-color);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .diff-table td {
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid var(--accent-color);
+        vertical-align: top;
+      }
+
+      .diff-table tr:hover {
+        background: rgba(85, 191, 217, 0.1);
+      }
+
+      .term-id {
+        font-weight: 600;
+        color: var(--link-color);
+        max-width: 150px;
+        word-break: break-word;
+      }
+
+      .language-cell {
+        max-width: 300px;
+        word-wrap: break-word;
+      }
+
+      .diff-content {
+        padding: 0.75rem;
+        background: var(--secondary-bg);
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .diff-added {
+        background: #d1f2d1;
+        color: #0f5132;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-weight: 500;
+      }
+
+      .diff-removed {
+        background: #f8d7da;
+        color: #842029;
+        padding: 2px 4px;
+        border-radius: 3px;
+        text-decoration: line-through;
+        font-weight: 500;
+      }
+
+      .diff-unchanged {
+        color: var(--text-color);
+      }
+
+      .no-changes {
+        text-align: center;
+        color: var(--text-color);
+        opacity: 0.7;
+        font-style: italic;
+        padding: 1.5rem;
+      }
+
+      .export-controls {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid var(--accent-color);
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .language-selector {
+        margin-bottom: 1rem;
+      }
+
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(85, 191, 217, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--link-color);
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      @media (max-width: 768px) {
+        .upload-section {
+          grid-template-columns: 1fr;
+        }
+
+        .options-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .button-group {
+          flex-direction: column;
+        }
+
+        .diff-view-controls {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Localization Diff Tool</h1>
+        <p class="subtitle">
+          Compare localization files to see exact differences
+        </p>
+      </div>
+
+      <div class="upload-section">
+        <div class="upload-card">
+          <h2>📄 Original File</h2>
+          <div class="upload-area" id="uploadArea1">
+            <div class="upload-icon">📁</div>
+            <p><strong>Click to upload</strong> or drag and drop</p>
+            <p style="color: #999; font-size: 12px; margin-top: 5px">
+              CSV or XLSX files only
+            </p>
+            <input type="file" id="fileInput1" accept=".csv,.xlsx" />
+          </div>
+          <div class="file-info" id="fileInfo1">
+            <div class="file-name" id="fileName1"></div>
+            <div class="file-size" id="fileSize1"></div>
+          </div>
+        </div>
+
+        <div class="upload-card">
+          <h2>📄 Updated File</h2>
+          <div class="upload-area" id="uploadArea2">
+            <div class="upload-icon">📁</div>
+            <p><strong>Click to upload</strong> or drag and drop</p>
+            <p style="color: #999; font-size: 12px; margin-top: 5px">
+              CSV or XLSX files only
+            </p>
+            <input type="file" id="fileInput2" accept=".csv,.xlsx" />
+          </div>
+          <div class="file-info" id="fileInfo2">
+            <div class="file-name" id="fileName2"></div>
+            <div class="file-size" id="fileSize2"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="options-section">
+        <div class="options-grid">
+          <div class="option-group">
+            <label for="compareLanguage">Language to Compare</label>
+            <select id="compareLanguage">
+              <option value="English">English</option>
+              <option value="auto">Auto-detect from files</option>
+            </select>
+          </div>
+
+          <div class="option-group">
+            <label for="csvSeparator">CSV Separator</label>
+            <select id="csvSeparator">
+              <option value="auto">Auto-detect</option>
+              <option value=",">, (Comma)</option>
+              <option value=";">; (Semicolon)</option>
+              <option value="\t">Tab</option>
+              <option value="|">| (Pipe)</option>
+            </select>
+          </div>
+
+          <div class="option-group">
+            <label for="ignoreCase">Comparison Options</label>
+            <select id="comparisonOptions">
+              <option value="exact">Exact Match</option>
+              <option value="ignoreCase">Ignore Case</option>
+              <option value="ignoreWhitespace">Ignore Whitespace</option>
+              <option value="ignoreBoth">Ignore Case & Whitespace</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button class="btn btn-compare" id="compareBtn" disabled>
+            Compare Files
+          </button>
+          <button class="btn" id="clearBtn">Clear All</button>
+        </div>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <div class="results-section" id="resultsSection">
+        <div class="results-header">
+          <div class="results-title">Comparison Results</div>
+          <div id="overallSummary"></div>
+        </div>
+
+        <div class="diff-stats" id="diffStats">
+          <div class="stat-item">
+            <div class="stat-value added" id="addedCount">0</div>
+            <div class="stat-label">Added</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value modified" id="modifiedCount">0</div>
+            <div class="stat-label">Modified</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value removed" id="removedCount">0</div>
+            <div class="stat-label">Removed</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value unchanged" id="unchangedCount">0</div>
+            <div class="stat-label">Unchanged</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value newline-only" id="newlineOnlyCount">0</div>
+            <div class="stat-label">Newline Only</div>
+          </div>
+        </div>
+
+        <div class="diff-view-controls">
+          <button class="view-btn active" data-view="all">All Changes</button>
+          <button class="view-btn" data-view="modified">Modified Only</button>
+          <button class="view-btn" data-view="added">Added Only</button>
+          <button class="view-btn" data-view="removed">Removed Only</button>
+          <button class="view-btn" data-view="newline-only">
+            Newline Only
+          </button>
+        </div>
+
+        <div class="diff-container">
+          <div id="diffResults"></div>
+        </div>
+
+        <div class="export-controls">
+          <button class="view-btn" id="exportCsvBtn">Export Diff as CSV</button>
+          <button class="view-btn" id="exportHtmlBtn">
+            Export as HTML Report
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/diff@5.1.0/dist/diff.min.js"></script>
+
+    <!-- Application Scripts -->
+    <script type="module" src="./diff-page.js"></script>
+  </body>
+</html>
