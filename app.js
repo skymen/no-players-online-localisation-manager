@@ -12,7 +12,7 @@ import {
   generateEnhancedLineDiff,
 } from "./diffModule.js";
 import { csvToXlsx, xlsxToCsv } from "./converter.js";
-import { checkMergeStatus } from "./mergeChecker.js";
+import { checkMergeStatus, checkEnhancedMergeStatus } from "./mergeChecker.js";
 
 class LocalisationManager {
   constructor() {
@@ -320,13 +320,47 @@ class LocalisationManager {
 
       const statusElement = document.getElementById("merge-status-current");
       if (statusElement) {
-        if (mergeStatus.isMerged) {
-          statusElement.className = "merge-status merged";
-          statusElement.textContent = "✅ Merged into main sheet";
-        } else {
-          statusElement.className = "merge-status not-merged";
-          statusElement.textContent = "❌ Not yet merged into main sheet";
+        switch (
+          mergeStatus.status ||
+          (mergeStatus.isMerged ? "merged" : "unmerged")
+        ) {
+          case "merged":
+            statusElement.className = "merge-status merged";
+            statusElement.textContent = "✅ Merged into main sheet";
+            break;
+          case "merged-outdated":
+            statusElement.className = "merge-status merged-outdated";
+            statusElement.innerHTML = `
+              ✅ Merged (Outdated)
+              <button class="validate-btn outdated" onclick="window.localisationManager.showOutdatedTerms()" 
+                      style="margin-left: 0.5rem; padding: 0.2rem 0.5rem; background: #17a2b8; color: white; border: none; border-radius: 3px; font-size: 0.7rem; cursor: pointer;">
+                Show ${
+                  mergeStatus.outdatedTerms
+                    ? mergeStatus.outdatedTerms.length
+                    : 0
+                } Outdated
+              </button>
+            `;
+            break;
+          case "unmerged-outdated":
+            statusElement.className = "merge-status unmerged-outdated";
+            statusElement.innerHTML = `
+              ⚠️ Unmerged & Outdated
+              <button class="validate-btn outdated-highlight" onclick="window.localisationManager.validateCurrentServerFile()" 
+                      style="margin-left: 0.5rem; padding: 0.2rem 0.5rem; background: #fd7e14; color: white; border: none; border-radius: 3px; font-size: 0.7rem; cursor: pointer;">
+                Validate to See Details
+              </button>
+            `;
+            break;
+          case "unmerged":
+          default:
+            statusElement.className = "merge-status not-merged";
+            statusElement.textContent = "❌ Not yet merged into main sheet";
+            break;
         }
+
+        // Store merge status for later use
+        this.lastMergeStatus = mergeStatus;
       }
     } catch (error) {
       const statusElement = document.getElementById("merge-status-current");
@@ -1640,16 +1674,49 @@ class LocalisationManager {
 
       // Add merge status info to the report
       const reportContent = document.getElementById("reportContent");
-      const mergeStatusHTML = `
-        <div class="report" style="margin-bottom: 1rem;">
-          <h4>Merge Status</h4>
-          <p>${
-            validation.mergeStatus.isMerged
-              ? `✅ <strong>Merged:</strong> All ${validation.mergeStatus.checkedTerms} translated terms match the main sheet.`
-              : `❌ <strong>Not Merged:</strong> File has not been fully merged into the main sheet.`
-          }</p>
-        </div>
-      `;
+      let mergeStatusHTML = `<div class="report" style="margin-bottom: 1rem;"><h4>Merge Status</h4>`;
+
+      switch (
+        validation.mergeStatus.status ||
+        (validation.mergeStatus.isMerged ? "merged" : "unmerged")
+      ) {
+        case "merged":
+          mergeStatusHTML += `<p>✅ <strong>Merged:</strong> All ${validation.mergeStatus.checkedTerms} translated terms match the main sheet.</p>`;
+          break;
+        case "merged-outdated":
+          mergeStatusHTML += `
+            <p>✅ <strong>Merged (Outdated):</strong> All ${validation.mergeStatus.checkedTerms} valid terms match the main sheet.</p>
+            <p style="color: #17a2b8; margin-top: 0.5rem;">
+              ⚠️ However, ${validation.mergeStatus.outdatedTerms.length} terms have outdated English text.
+              <button onclick="window.localisationManager.showOutdatedTerms()" 
+                      style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; background: #17a2b8; color: white; border: none; border-radius: 3px; font-size: 0.8rem; cursor: pointer;">
+                Show Outdated Terms
+              </button>
+            </p>
+          `;
+          break;
+        case "unmerged-outdated":
+          mergeStatusHTML += `
+            <p>❌ <strong>Unmerged & Outdated:</strong> File has not been fully merged into the main sheet.</p>
+            <p style="color: #fd7e14; margin-top: 0.5rem;">
+              ⚠️ Additionally, ${validation.mergeStatus.outdatedTerms.length} terms have outdated English text.
+              <button onclick="window.localisationManager.showOutdatedTerms()" 
+                      style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; background: #fd7e14; color: white; border: none; border-radius: 3px; font-size: 0.8rem; cursor: pointer;">
+                Show Outdated Terms
+              </button>
+            </p>
+          `;
+          break;
+        case "unmerged":
+        default:
+          mergeStatusHTML += `<p>❌ <strong>Not Merged:</strong> File has not been fully merged into the main sheet.</p>`;
+          break;
+      }
+
+      mergeStatusHTML += `</div>`;
+
+      // Store merge status for showOutdatedTerms
+      this.lastMergeStatus = validation.mergeStatus;
 
       reportContent.innerHTML = mergeStatusHTML + reportContent.innerHTML;
 
@@ -1785,6 +1852,81 @@ class LocalisationManager {
     }
 
     return checkMergeStatus(serverData, languageName, this.data, lqaData);
+  }
+
+  showOutdatedTerms() {
+    if (!this.lastMergeStatus || !this.lastMergeStatus.outdatedTerms) {
+      alert("No outdated terms information available");
+      return;
+    }
+
+    const outdatedTerms = this.lastMergeStatus.outdatedTerms;
+    const modal = document.createElement("div");
+    modal.style.cssText = `
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); display: flex; align-items: center;
+      justify-content: center; z-index: 2000;
+    `;
+
+    const content = document.createElement("div");
+    content.style.cssText = `
+      background: var(--secondary-bg); padding: 2rem; border-radius: 8px;
+      max-width: 80%; max-height: 80%; overflow-y: auto; color: var(--text-color);
+    `;
+
+    let htmlContent = `
+      <h3 style="color: var(--link-color); margin-bottom: 1rem;">
+        Outdated Terms for ${this.selectedLanguage} (${outdatedTerms.length})
+      </h3>
+      <p style="margin-bottom: 1rem; opacity: 0.8;">
+        These terms have different English text in your file compared to the main sheet:
+      </p>
+    `;
+
+    outdatedTerms.forEach((term) => {
+      htmlContent += `
+        <div style="background: var(--bg-color); padding: 1rem; margin-bottom: 1rem; border-radius: 6px; border: 1px solid var(--accent-color);">
+          <div style="font-weight: 600; color: var(--link-color); margin-bottom: 0.5rem;">
+            ${term.termID}
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <strong>Your English:</strong><br>
+            <code style="background: var(--secondary-bg); padding: 0.25rem; border-radius: 3px;">${this.escapeHtml(
+              term.serverEnglish
+            )}</code>
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <strong>Latest English:</strong><br>
+            <code style="background: var(--secondary-bg); padding: 0.25rem; border-radius: 3px;">${this.escapeHtml(
+              term.mainEnglish
+            )}</code>
+          </div>
+          <div>
+            <strong>Your Translation:</strong><br>
+            <code style="background: var(--secondary-bg); padding: 0.25rem; border-radius: 3px;">${this.escapeHtml(
+              term.currentTranslation
+            )}</code>
+          </div>
+        </div>
+      `;
+    });
+
+    htmlContent += `
+      <button style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--accent-color); 
+                     color: var(--text-color); border: none; border-radius: 4px; cursor: pointer;"
+              onclick="this.closest('.modal').remove()">
+        Close
+      </button>
+    `;
+
+    content.innerHTML = htmlContent;
+    modal.className = "modal";
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.remove();
+    });
   }
 
   showStatus(message) {

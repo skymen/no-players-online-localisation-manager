@@ -11,7 +11,11 @@ import {
   generateCharDiff,
   generateEnhancedLineDiff,
 } from "./diffModule.js";
-import { checkIfMerged, checkIfLQAMerged } from "./mergeChecker.js";
+import {
+  checkIfMerged,
+  checkIfLQAMerged,
+  checkEnhancedMergeStatus,
+} from "./mergeChecker.js";
 
 class AdminManager {
   constructor() {
@@ -1082,12 +1086,15 @@ class AdminManager {
 
       const csvContent = await csvResponse.text();
       const serverData = parseCSV(csvContent);
-      const isMerged = this.checkIfMerged(serverData, language);
+      const enhancedStatus = this.getEnhancedMergeStatus(serverData, language);
 
       return {
         language,
         hasFile: true,
-        isMerged,
+        isMerged: enhancedStatus.isMerged,
+        status: enhancedStatus.status,
+        outdatedTerms: enhancedStatus.outdatedTerms,
+        hasOutdatedTerms: enhancedStatus.hasOutdatedTerms,
         fileInfo: currentFile,
         serverData,
       };
@@ -1177,6 +1184,21 @@ class AdminManager {
     return checkIfMerged(serverData, language, this.modifiedData, lqaData);
   }
 
+  getEnhancedMergeStatus(serverData, language) {
+    // Get LQA data for this language if available
+    const lqaStatus = this.lqaFileStatuses.find(
+      (status) => status.language === language
+    );
+    const lqaData = lqaStatus && lqaStatus.lqaData ? lqaStatus.lqaData : null;
+
+    return checkEnhancedMergeStatus(
+      serverData,
+      language,
+      this.modifiedData,
+      lqaData
+    );
+  }
+
   displayServerFileStatuses(statuses, lqaStatuses = []) {
     const resultsContainer = document.getElementById("serverFilesResults");
 
@@ -1191,22 +1213,56 @@ class AdminManager {
         let actionButtons = "";
 
         if (status.hasFile) {
-          if (status.isMerged) {
-            statusClass = "merged";
-            // Determine if this is merged with or without LQA
-            if (lqaStatus && lqaStatus.hasLQAFile && lqaStatus.lqaIsMerged) {
-              statusText = "✅ Merged (LQA Merged)";
-            } else {
-              statusText = "✅ Merged (LQA Unmerged)";
-            }
-          } else {
-            statusClass = "unmerged";
-            statusText = "⚠️ Unmerged";
-            actionButtons = `
-            <button class="server-file-btn merge" onclick="window.adminManager.mergeServerFile('${status.language}')">
-              Merge
-            </button>
-          `;
+          switch (status.status || (status.isMerged ? "merged" : "unmerged")) {
+            case "merged":
+              statusClass = "merged";
+              if (lqaStatus && lqaStatus.hasLQAFile && lqaStatus.lqaIsMerged) {
+                statusText = "✅ Merged (LQA Merged)";
+              } else {
+                statusText = "✅ Merged";
+              }
+              break;
+            case "merged-outdated":
+              statusClass = "merged-outdated";
+              statusText = "✅ Merged (Outdated)";
+              actionButtons = `
+                <button class="server-file-btn outdated" onclick="window.adminManager.showOutdatedTerms('${
+                  status.language
+                }')">
+                  Show Outdated (${
+                    status.outdatedTerms ? status.outdatedTerms.length : 0
+                  })
+                </button>
+              `;
+              break;
+            case "unmerged-outdated":
+              statusClass = "unmerged-outdated";
+              statusText = "⚠️ Unmerged & Outdated";
+              actionButtons = `
+                <button class="server-file-btn merge" onclick="window.adminManager.mergeServerFile('${
+                  status.language
+                }')">
+                  Merge
+                </button>
+                <button class="server-file-btn outdated" onclick="window.adminManager.showOutdatedTerms('${
+                  status.language
+                }')">
+                  Show Outdated (${
+                    status.outdatedTerms ? status.outdatedTerms.length : 0
+                  })
+                </button>
+              `;
+              break;
+            case "unmerged":
+            default:
+              statusClass = "unmerged";
+              statusText = "⚠️ Unmerged";
+              actionButtons = `
+                <button class="server-file-btn merge" onclick="window.adminManager.mergeServerFile('${status.language}')">
+                  Merge
+                </button>
+              `;
+              break;
           }
         }
 
@@ -1282,7 +1338,12 @@ class AdminManager {
         throw new Error("No server file available to merge");
       }
 
-      this.mergeLanguageData(status.serverData, language);
+      const mergeResult = this.mergeLanguageData(status.serverData, language);
+
+      let statusMessage = `Successfully merged ${mergeResult.updatedCount} ${language} translations`;
+      if (mergeResult.skippedOutdated > 0) {
+        statusMessage += ` (skipped ${mergeResult.skippedOutdated} outdated terms)`;
+      }
 
       // Refresh the displays
       this.displayDataOverview();
@@ -1291,7 +1352,7 @@ class AdminManager {
       // Show download section since we have changes
       document.getElementById("downloadSection").classList.remove("hidden");
 
-      this.showStatus(`Successfully merged ${language} translations`);
+      this.showStatus(statusMessage);
       setTimeout(() => this.hideStatus(), 2000);
     } catch (error) {
       this.showStatus(`Error merging ${language}: ${error.message}`);
@@ -1309,7 +1370,12 @@ class AdminManager {
         throw new Error("No LQA file available to merge");
       }
 
-      this.mergeLanguageData(lqaStatus.lqaData, language);
+      const mergeResult = this.mergeLanguageData(lqaStatus.lqaData, language);
+
+      let statusMessage = `Successfully merged ${mergeResult.updatedCount} LQA translations for ${language}`;
+      if (mergeResult.skippedOutdated > 0) {
+        statusMessage += ` (skipped ${mergeResult.skippedOutdated} outdated terms)`;
+      }
 
       // Refresh the displays
       this.displayDataOverview();
@@ -1318,7 +1384,7 @@ class AdminManager {
       // Show download section since we have changes
       document.getElementById("downloadSection").classList.remove("hidden");
 
-      this.showStatus(`Successfully merged LQA translations for ${language}`);
+      this.showStatus(statusMessage);
       setTimeout(() => this.hideStatus(), 2000);
     } catch (error) {
       this.showStatus(`Error merging LQA for ${language}: ${error.message}`);
@@ -1334,7 +1400,10 @@ class AdminManager {
       for (const language of this.languages) {
         const status = await this.checkServerFileStatus(language);
         if (status.hasFile && !status.isMerged && status.serverData) {
-          this.mergeLanguageData(status.serverData, language);
+          const mergeResult = this.mergeLanguageData(
+            status.serverData,
+            language
+          );
           mergedCount++;
         }
       }
@@ -1370,7 +1439,10 @@ class AdminManager {
           !lqaStatus.isLQAMerged &&
           lqaStatus.lqaData
         ) {
-          this.mergeLanguageData(lqaStatus.lqaData, lqaStatus.language);
+          const mergeResult = this.mergeLanguageData(
+            lqaStatus.lqaData,
+            lqaStatus.language
+          );
           mergedCount++;
         }
       }
@@ -1395,23 +1467,50 @@ class AdminManager {
   }
 
   mergeLanguageData(serverData, language) {
-    // Create a map of server translations by termID
+    // Helper function to normalize text (same as in mergeChecker.js)
+    const normalizeText = (text) => {
+      if (!text) return "";
+      return text
+        .replace(/\r\n/g, "\n") // Normalize Windows line endings
+        .replace(/\r/g, "\n"); // Normalize old Mac line endings
+    };
+
+    // Create maps of server data by termID
     const serverTranslations = {};
+    const serverEnglishMap = {};
     serverData.forEach((row) => {
-      if (row.termID && row[language] && row[language].trim()) {
-        serverTranslations[row.termID] = row[language];
+      if (row.termID) {
+        if (row[language] && row[language].trim()) {
+          serverTranslations[row.termID] = normalizeText(row[language]);
+        }
+        if (row.English) {
+          serverEnglishMap[row.termID] = normalizeText(row.English);
+        }
       }
     });
 
-    // Update modifiedData with server translations
+    // Update modifiedData with server translations, but skip outdated terms
     let updatedCount = 0;
+    let skippedOutdated = 0;
     this.modifiedData.forEach((row) => {
       if (row.termID && serverTranslations[row.termID]) {
-        const oldValue = row[language] || "";
+        // Check if this term is outdated (server English doesn't match main English)
+        const mainEnglish = normalizeText(row.English || "");
+        const serverEnglish = serverEnglishMap[row.termID];
+
+        if (serverEnglish && serverEnglish !== mainEnglish) {
+          skippedOutdated++;
+          return; // Skip this outdated term
+        }
+
+        const oldValue = normalizeText(row[language] || "");
         const newValue = serverTranslations[row.termID];
 
         if (oldValue !== newValue) {
-          row[language] = newValue;
+          // Store the original (non-normalized) value from server
+          const originalServerValue =
+            serverData.find((r) => r.termID === row.termID)?.[language] || "";
+          row[language] = originalServerValue;
           updatedCount++;
         }
       }
@@ -1421,7 +1520,87 @@ class AdminManager {
       this.markUnsavedChanges();
     }
 
-    return updatedCount;
+    return { updatedCount, skippedOutdated };
+  }
+
+  showOutdatedTerms(language) {
+    // Find the server file status for this language
+    const serverStatus = this.serverFileStatuses.find(
+      (status) => status.language === language
+    );
+
+    if (!serverStatus || !serverStatus.outdatedTerms) {
+      alert(`No outdated terms found for ${language}`);
+      return;
+    }
+
+    const outdatedTerms = serverStatus.outdatedTerms;
+    const modal = document.createElement("div");
+    modal.style.cssText = `
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); display: flex; align-items: center;
+      justify-content: center; z-index: 2000;
+    `;
+
+    const content = document.createElement("div");
+    content.style.cssText = `
+      background: var(--secondary-bg); padding: 2rem; border-radius: 8px;
+      max-width: 80%; max-height: 80%; overflow-y: auto; color: var(--text-color);
+    `;
+
+    let htmlContent = `
+      <h3 style="color: var(--link-color); margin-bottom: 1rem;">
+        Outdated Terms for ${language} (${outdatedTerms.length})
+      </h3>
+      <p style="margin-bottom: 1rem; opacity: 0.8;">
+        These terms have different English text in the server file compared to the main sheet:
+      </p>
+    `;
+
+    outdatedTerms.forEach((term) => {
+      htmlContent += `
+        <div style="background: var(--bg-color); padding: 1rem; margin-bottom: 1rem; border-radius: 6px; border: 1px solid var(--accent-color);">
+          <div style="font-weight: 600; color: var(--link-color); margin-bottom: 0.5rem;">
+            ${term.termID}
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <strong>Server English:</strong><br>
+            <code style="background: var(--secondary-bg); padding: 0.25rem; border-radius: 3px;">${this.escapeHtml(
+              term.serverEnglish
+            )}</code>
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <strong>Current English:</strong><br>
+            <code style="background: var(--secondary-bg); padding: 0.25rem; border-radius: 3px;">${this.escapeHtml(
+              term.mainEnglish
+            )}</code>
+          </div>
+          <div>
+            <strong>Current Translation:</strong><br>
+            <code style="background: var(--secondary-bg); padding: 0.25rem; border-radius: 3px;">${this.escapeHtml(
+              term.currentTranslation
+            )}</code>
+          </div>
+        </div>
+      `;
+    });
+
+    htmlContent += `
+      <button style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--accent-color); 
+                     color: var(--text-color); border: none; border-radius: 4px; cursor: pointer;"
+              onclick="this.closest('.modal').remove()">
+        Close
+      </button>
+    `;
+
+    content.innerHTML = htmlContent;
+    modal.className = "modal";
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.remove();
+    });
   }
 
   showStatus(message, type = "info") {

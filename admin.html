@@ -499,9 +499,19 @@
         background: rgba(40, 167, 69, 0.1);
       }
 
+      .server-file-item.merged-outdated {
+        border-color: #17a2b8;
+        background: rgba(23, 162, 184, 0.1);
+      }
+
       .server-file-item.unmerged {
         border-color: #ffc107;
         background: rgba(255, 193, 7, 0.1);
+      }
+
+      .server-file-item.unmerged-outdated {
+        border-color: #fd7e14;
+        background: rgba(253, 126, 20, 0.1);
       }
 
       .server-file-item.no-file {
@@ -575,6 +585,10 @@
 
       .server-file-btn.merge {
         background: var(--button-bg);
+      }
+
+      .server-file-btn.outdated {
+        background: #17a2b8;
       }
 
       /* Navigation Tabs */
