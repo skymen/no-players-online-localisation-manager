@@ -123,7 +123,7 @@ export function checkIfLQAMerged(lqaData, language, mainData) {
     }
   }
 
-  return allMerged && checkedTerms > 0;
+  return allMerged;
 }
 
 /**
