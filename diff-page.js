@@ -441,6 +441,14 @@ class DiffPageManager {
     let a = val1;
     let b = val2;
 
+    // Strip leading single quote (Google Sheets/Excel escape character)
+    if (a.startsWith("'")) {
+      a = a.substring(1);
+    }
+    if (b.startsWith("'")) {
+      b = b.substring(1);
+    }
+
     if (options.ignoreCase) {
       a = a.toLowerCase();
       b = b.toLowerCase();
@@ -455,9 +463,13 @@ class DiffPageManager {
   }
 
   isNewlineOnlyDiff(val1, val2) {
+    // Strip leading single quote (Google Sheets/Excel escape character)
+    let v1 = val1.startsWith("'") ? val1.substring(1) : val1;
+    let v2 = val2.startsWith("'") ? val2.substring(1) : val2;
+
     // Normalize newlines and check if the only difference is in line endings
-    const normalized1 = val1.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-    const normalized2 = val2.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const normalized1 = v1.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const normalized2 = v2.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
     // If they're equal after normalization, it's a newline-only diff
     if (normalized1 === normalized2) {
@@ -465,10 +477,10 @@ class DiffPageManager {
     }
 
     // Additional check: see if the difference is only whitespace-related
-    const trimmed1 = val1.replace(/\s+/g, " ").trim();
-    const trimmed2 = val2.replace(/\s+/g, " ").trim();
+    const trimmed1 = v1.replace(/\s+/g, " ").trim();
+    const trimmed2 = v2.replace(/\s+/g, " ").trim();
 
-    return trimmed1 === trimmed2 && val1 !== val2;
+    return trimmed1 === trimmed2 && v1 !== v2;
   }
 
   generateNewlineDiffHTML(val1, val2) {

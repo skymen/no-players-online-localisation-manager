@@ -245,7 +245,9 @@ class AdminManager {
     // Helper function to normalize text for comparison
     const normalizeText = (text) => {
       if (!text) return "";
-      return text
+      // Strip leading single quote (Google Sheets/Excel escape character)
+      let normalized = text.startsWith("'") ? text.substring(1) : text;
+      return normalized
         .replace(/\r\n/g, "\n") // Normalize Windows line endings
         .replace(/\r/g, "\n"); // Normalize old Mac line endings
     };
@@ -1558,7 +1560,9 @@ class AdminManager {
     // Helper function to normalize text (same as in mergeChecker.js)
     const normalizeText = (text) => {
       if (!text) return "";
-      return text
+      // Strip leading single quote (Google Sheets/Excel escape character)
+      let normalized = text.startsWith("'") ? text.substring(1) : text;
+      return normalized
         .replace(/\r\n/g, "\n") // Normalize Windows line endings
         .replace(/\r/g, "\n"); // Normalize old Mac line endings
     };

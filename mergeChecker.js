@@ -11,7 +11,9 @@
  */
 function normalizeText(text) {
   if (!text) return "";
-  return text
+  // Strip leading single quote (Google Sheets/Excel escape character)
+  let normalized = text.startsWith("'") ? text.substring(1) : text;
+  return normalized
     .replace(/\r\n/g, "\n") // Normalize Windows line endings
     .replace(/\r/g, "\n"); // Normalize old Mac line endings
 }
