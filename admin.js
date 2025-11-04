@@ -15,6 +15,7 @@ import {
   checkIfMerged,
   checkIfLQAMerged,
   checkEnhancedMergeStatus,
+  normalizeText,
 } from "./mergeChecker.js";
 
 class AdminManager {
@@ -241,16 +242,6 @@ class AdminManager {
     const uploadedMap = {};
     const originalRawMap = {}; // Store raw text for diff display
     const uploadedRawMap = {}; // Store raw text for diff display
-
-    // Helper function to normalize text for comparison
-    const normalizeText = (text) => {
-      if (!text) return "";
-      // Strip leading single quote (Google Sheets/Excel escape character)
-      let normalized = text.startsWith("'") ? text.substring(1) : text;
-      return normalized
-        .replace(/\r\n/g, "\n") // Normalize Windows line endings
-        .replace(/\r/g, "\n"); // Normalize old Mac line endings
-    };
 
     // Create maps for easy comparison
     this.originalData.forEach((row) => {
@@ -1557,16 +1548,6 @@ class AdminManager {
   }
 
   mergeLanguageData(serverData, language) {
-    // Helper function to normalize text (same as in mergeChecker.js)
-    const normalizeText = (text) => {
-      if (!text) return "";
-      // Strip leading single quote (Google Sheets/Excel escape character)
-      let normalized = text.startsWith("'") ? text.substring(1) : text;
-      return normalized
-        .replace(/\r\n/g, "\n") // Normalize Windows line endings
-        .replace(/\r/g, "\n"); // Normalize old Mac line endings
-    };
-
     // Create maps of server data by termID
     const serverTranslations = {};
     const serverEnglishMap = {};

@@ -9,13 +9,24 @@
  * @param {string} text - Text to normalize
  * @returns {string} - Normalized text
  */
-function normalizeText(text) {
+export function normalizeText(text) {
   if (!text) return "";
   // Strip leading single quote (Google Sheets/Excel escape character)
   let normalized = text.startsWith("'") ? text.substring(1) : text;
   return normalized
     .replace(/\r\n/g, "\n") // Normalize Windows line endings
-    .replace(/\r/g, "\n"); // Normalize old Mac line endings
+    .replace(/\r/g, "\n") // Normalize old Mac line endings
+    .replace(/、/g, ",") // Normalize ideographic comma to ASCII
+    .replace(/。/g, ".") // Normalize ideographic period to ASCII
+    .replace(/？/g, "?") // Normalize ideographic question mark to ASCII
+    .replace(/！/g, "!") // Normalize ideographic exclamation mark to ASCII
+    .replace(/：/g, ":") // Normalize ideographic colon to ASCII
+    .replace(/；/g, ";") // Normalize ideographic semicolon to ASCII
+    .replace(/“/g, '"') // Normalize ideographic double quotation mark to ASCII
+    .replace(/”/g, '"') // Normalize ideographic double quotation mark to ASCII
+    .replace(/‘/g, "'") // Normalize ideographic single quotation mark to ASCII
+    .replace(/’/g, "'") // Normalize ideographic single quotation mark to ASCII
+    .normalize("NFKC"); // Normalize Unicode characters
 }
 
 /**
@@ -80,13 +91,17 @@ export function checkIfMerged(serverData, language, mainData, lqaData = null) {
         // Check if server matches main data with LQA applied (LQA takes precedence)
         if (lqaTranslation && serverTranslation === lqaTranslation) {
           matchesMainWithLQA = true;
+        } else {
+          console.warn(`Server not merged for ${termID}`);
+          console.warn(`Server: ${serverTranslation}`);
+          console.warn(`Main: ${mainTranslation}`);
         }
       }
     }
   }
 
   // Return true if either condition is met and we checked at least one term
-  return checkedTerms > 0 && (matchesMainData || matchesMainWithLQA);
+  return matchesMainData || matchesMainWithLQA;
 }
 
 /**
@@ -120,6 +135,9 @@ export function checkIfLQAMerged(lqaData, language, mainData) {
       checkedTerms++;
       if (lqaTranslation !== mainTranslation) {
         allMerged = false;
+        console.warn(`LQA not merged for ${termID}`);
+        console.warn(`LQA: ${lqaTranslation}`);
+        console.warn(`Main: ${mainTranslation}`);
         break;
       }
     }
