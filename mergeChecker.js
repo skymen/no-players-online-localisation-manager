@@ -5,6 +5,74 @@
  */
 
 /**
+ * Generate a character-by-character diff between two strings
+ * @param {string} str1 - First string (server translation)
+ * @param {string} str2 - Second string (expected translation)
+ * @returns {Object} - Object with formatted diff information
+ */
+function generateCharacterDiff(str1, str2) {
+  const maxLen = Math.max(str1.length, str2.length);
+  let diffDetails = [];
+  let hasDifference = false;
+
+  for (let i = 0; i < maxLen; i++) {
+    const char1 = str1[i] || "";
+    const char2 = str2[i] || "";
+
+    if (char1 !== char2) {
+      hasDifference = true;
+      const char1Display =
+        char1 === ""
+          ? "∅"
+          : char1 === "\n"
+          ? "\\n"
+          : char1 === "\t"
+          ? "\\t"
+          : char1;
+      const char2Display =
+        char2 === ""
+          ? "∅"
+          : char2 === "\n"
+          ? "\\n"
+          : char2 === "\t"
+          ? "\\t"
+          : char2;
+
+      diffDetails.push({
+        position: i,
+        server: `'${char1Display}' (${char1.charCodeAt(0) || "N/A"})`,
+        expected: `'${char2Display}' (${char2.charCodeAt(0) || "N/A"})`,
+      });
+    }
+  }
+
+  if (!hasDifference) {
+    return {
+      server: str1,
+      expected: str2,
+      details: "No character differences found (strings are identical)",
+    };
+  }
+
+  return {
+    server: str1,
+    expected: str2,
+    details:
+      diffDetails.length > 10
+        ? `${diffDetails.length} differences found. First 10: ${JSON.stringify(
+            diffDetails.slice(0, 10),
+            null,
+            2
+          )}`
+        : `${diffDetails.length} difference(s): ${JSON.stringify(
+            diffDetails,
+            null,
+            2
+          )}`,
+  };
+}
+
+/**
  * Helper function to normalize text for comparison (handles newline differences)
  * @param {string} text - Text to normalize
  * @returns {string} - Normalized text
@@ -66,6 +134,7 @@ export function checkIfMerged(serverData, language, mainData, lqaData = null) {
   let matchesMainData = true;
   let matchesMainWithLQA = false;
   let checkedTerms = 0;
+  let unmatchedTerms = [];
 
   for (const mainRow of mainData) {
     const termID = mainRow.termID;
@@ -92,16 +161,64 @@ export function checkIfMerged(serverData, language, mainData, lqaData = null) {
         if (lqaTranslation && serverTranslation === lqaTranslation) {
           matchesMainWithLQA = true;
         } else {
-          console.warn(`Server not merged for ${termID}`);
-          console.warn(`Server: ${serverTranslation}`);
-          console.warn(`Main: ${mainTranslation}`);
+          unmatchedTerms.push({
+            termID,
+            serverTranslation,
+            expectedTranslation: mainTranslation,
+            lqaTranslation: lqaTranslation || null,
+          });
         }
       }
     }
   }
 
+  const isMerged = matchesMainData || matchesMainWithLQA;
+
+  // Log unmerged terms to console if file is marked as unmerged
+  if (!isMerged && unmatchedTerms.length > 0) {
+    console.group(
+      `🔴 UNMERGED: ${language} - ${unmatchedTerms.length} unmerged term(s)`
+    );
+    console.log(`Checked: ${checkedTerms} terms`);
+    console.log("Unmerged terms:");
+    console.table(
+      unmatchedTerms.map((term) => ({
+        termID: term.termID,
+        serverTranslation: term.serverTranslation,
+        expectedTranslation: term.expectedTranslation,
+        hasLQA: term.lqaTranslation ? "Yes" : "No",
+        lqaTranslation: term.lqaTranslation || "N/A",
+      }))
+    );
+
+    // Character-by-character diff for each unmerged term
+    console.log("\n📝 Character-by-character differences:");
+    unmatchedTerms.forEach((term) => {
+      console.group(`Term: ${term.termID}`);
+
+      // Compare server vs LQA if LQA exists, otherwise vs expected
+      const compareAgainst = term.lqaTranslation || term.serverTranslation;
+      const compareLabel = term.lqaTranslation ? "LQA" : "Server";
+
+      const charDiff = generateCharacterDiff(
+        term.expectedTranslation,
+        compareAgainst
+      );
+      console.log("Expected:  ", charDiff.expected);
+      console.log(`${compareLabel}:`, charDiff.expected);
+      console.log("Diff details:", charDiff.details);
+
+      if (term.lqaTranslation) {
+        console.log("Server:", term.serverTranslation);
+      }
+      console.groupEnd();
+    });
+
+    console.groupEnd();
+  }
+
   // Return true if either condition is met and we checked at least one term
-  return matchesMainData || matchesMainWithLQA;
+  return isMerged;
 }
 
 /**
@@ -217,7 +334,7 @@ export function checkEnhancedMergeStatus(
       // Check if server matches main data (using normalized comparison)
       const matches =
         serverTranslation === mainTranslation ||
-        (lqaTranslation && serverTranslation === lqaTranslation);
+        (lqaTranslation && mainTranslation === lqaTranslation);
 
       if (matches) {
         validTermsMatched++;
@@ -235,6 +352,53 @@ export function checkEnhancedMergeStatus(
   const allValidMerged =
     validTermsTotal > 0 && validTermsMatched === validTermsTotal;
   const hasOutdatedTerms = outdatedTerms.length > 0;
+
+  // Log unmerged terms to console if file is marked as unmerged
+  if (!allValidMerged && unmatchedValidTerms.length > 0) {
+    console.group(
+      `🔴 UNMERGED: ${language} - ${unmatchedValidTerms.length} unmerged term(s)`
+    );
+    console.log(
+      `Status: ${
+        hasOutdatedTerms ? "unmerged-outdated" : "unmerged"
+      } | Matched: ${validTermsMatched}/${validTermsTotal}`
+    );
+    console.log("Unmerged terms:");
+    console.table(
+      unmatchedValidTerms.map((term) => ({
+        termID: term.termID,
+        serverTranslation: term.serverTranslation,
+        expectedTranslation: term.expectedTranslation,
+        hasLQA: term.lqaTranslation ? "Yes" : "No",
+        lqaTranslation: term.lqaTranslation || "N/A",
+      }))
+    );
+
+    // Character-by-character diff for each unmerged term
+    console.log("\n📝 Character-by-character differences:");
+    unmatchedValidTerms.forEach((term) => {
+      console.group(`Term: ${term.termID}`);
+
+      // Compare server vs LQA if LQA exists, otherwise vs expected
+      const compareAgainst = term.lqaTranslation || term.serverTranslation;
+      const compareLabel = term.lqaTranslation ? "LQA" : "Server";
+
+      const charDiff = generateCharacterDiff(
+        term.expectedTranslation,
+        compareAgainst
+      );
+      console.log("Expected:  ", charDiff.expected);
+      console.log(`${compareLabel}:`, charDiff.expected);
+      console.log("Diff details:", charDiff.details);
+
+      if (term.lqaTranslation) {
+        console.log("Server:", term.serverTranslation);
+      }
+      console.groupEnd();
+    });
+
+    console.groupEnd();
+  }
 
   return {
     isMerged: allValidMerged,
