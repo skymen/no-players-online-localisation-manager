@@ -11,13 +11,16 @@ import {
   getDiffStats,
   getDiffSummary,
 } from "./diffModule.js";
+import { normalizeText } from "./mergeChecker.js";
 
 class DiffPageManager {
   constructor() {
     this.file1 = null;
     this.file2 = null;
+    this.file3 = null; // LQA file
     this.file1Data = null;
     this.file2Data = null;
+    this.file3Data = null; // LQA data
     this.comparisonResults = null;
     this.availableLanguages = new Set(["English"]);
 
@@ -29,14 +32,19 @@ class DiffPageManager {
     // File upload elements
     this.uploadArea1 = document.getElementById("uploadArea1");
     this.uploadArea2 = document.getElementById("uploadArea2");
+    this.uploadArea3 = document.getElementById("uploadArea3");
     this.fileInput1 = document.getElementById("fileInput1");
     this.fileInput2 = document.getElementById("fileInput2");
+    this.fileInput3 = document.getElementById("fileInput3");
     this.fileInfo1 = document.getElementById("fileInfo1");
     this.fileInfo2 = document.getElementById("fileInfo2");
+    this.fileInfo3 = document.getElementById("fileInfo3");
     this.fileName1 = document.getElementById("fileName1");
     this.fileName2 = document.getElementById("fileName2");
+    this.fileName3 = document.getElementById("fileName3");
     this.fileSize1 = document.getElementById("fileSize1");
     this.fileSize2 = document.getElementById("fileSize2");
+    this.fileSize3 = document.getElementById("fileSize3");
 
     // Options elements
     this.compareLanguage = document.getElementById("compareLanguage");
@@ -46,6 +54,7 @@ class DiffPageManager {
     // Control elements
     this.compareBtn = document.getElementById("compareBtn");
     this.clearBtn = document.getElementById("clearBtn");
+    this.clearLqaBtn = document.getElementById("clearLqaBtn");
 
     // Status and results elements
     this.status = document.getElementById("status");
@@ -73,6 +82,7 @@ class DiffPageManager {
     // File upload area clicks
     this.uploadArea1.addEventListener("click", () => this.fileInput1.click());
     this.uploadArea2.addEventListener("click", () => this.fileInput2.click());
+    this.uploadArea3.addEventListener("click", () => this.fileInput3.click());
 
     // File input changes
     this.fileInput1.addEventListener("change", (e) =>
@@ -81,14 +91,19 @@ class DiffPageManager {
     this.fileInput2.addEventListener("change", (e) =>
       this.handleFileSelect(e, 2)
     );
+    this.fileInput3.addEventListener("change", (e) =>
+      this.handleFileSelect(e, 3)
+    );
 
     // Drag and drop
     this.setupDragAndDrop(this.uploadArea1, 1);
     this.setupDragAndDrop(this.uploadArea2, 2);
+    this.setupDragAndDrop(this.uploadArea3, 3);
 
     // Control buttons
     this.compareBtn.addEventListener("click", () => this.compareFiles());
     this.clearBtn.addEventListener("click", () => this.clearAll());
+    this.clearLqaBtn.addEventListener("click", () => this.clearFile(3));
 
     // View controls
     this.viewBtns.forEach((btn) => {
@@ -144,11 +159,17 @@ class DiffPageManager {
         this.fileName1.textContent = file.name;
         this.fileSize1.textContent = this.formatFileSize(file.size);
         this.fileInfo1.classList.add("show");
-      } else {
+      } else if (fileNumber === 2) {
         this.file2 = file;
         this.fileName2.textContent = file.name;
         this.fileSize2.textContent = this.formatFileSize(file.size);
         this.fileInfo2.classList.add("show");
+      } else {
+        this.file3 = file;
+        this.fileName3.textContent = file.name;
+        this.fileSize3.textContent = this.formatFileSize(file.size);
+        this.fileInfo3.classList.add("show");
+        this.clearLqaBtn.style.display = "block";
       }
 
       // Process file
@@ -182,8 +203,10 @@ class DiffPageManager {
       // Store parsed data
       if (fileNumber === 1) {
         this.file1Data = parsedData;
-      } else {
+      } else if (fileNumber === 2) {
         this.file2Data = parsedData;
+      } else {
+        this.file3Data = parsedData;
       }
 
       // Extract languages from the data
@@ -201,11 +224,7 @@ class DiffPageManager {
       );
 
       // Clear failed file
-      if (fileNumber === 1) {
-        this.clearFile(1);
-      } else {
-        this.clearFile(2);
-      }
+      this.clearFile(fileNumber);
     }
   }
 
@@ -304,10 +323,21 @@ class DiffPageManager {
       const compareLanguage = this.compareLanguage.value;
       const comparisonOptions = this.getComparisonOptions();
 
+      // Merge LQA data into file2 if LQA file is provided
+      let file2DataWithLQA = this.file2Data;
+      if (this.file3Data) {
+        this.showStatus("Merging LQA translations...", "info");
+        file2DataWithLQA = this.mergeLQAIntoData(
+          this.file2Data,
+          this.file3Data,
+          compareLanguage
+        );
+      }
+
       // Generate diff for each term
       const diffResults = this.generateTermDiffs(
         this.file1Data,
-        this.file2Data,
+        file2DataWithLQA,
         compareLanguage,
         comparisonOptions
       );
@@ -327,6 +357,37 @@ class DiffPageManager {
       ignoreCase: value === "ignoreCase" || value === "ignoreBoth",
       ignoreWhitespace: value === "ignoreWhitespace" || value === "ignoreBoth",
     };
+  }
+
+  /**
+   * Merge LQA translations into the base data
+   * LQA translations take precedence over base translations
+   * @param {Array} baseData - The base file data
+   * @param {Array} lqaData - The LQA file data
+   * @param {string} language - The language to merge
+   * @returns {Array} - The merged data
+   */
+  mergeLQAIntoData(baseData, lqaData, language) {
+    // Create a deep copy of base data to avoid mutation
+    const mergedData = baseData.map((row) => ({ ...row }));
+
+    // Create a map of LQA translations by termID
+    const lqaMap = {};
+    lqaData.forEach((row) => {
+      if (row.termID && row[language] && row[language].trim()) {
+        lqaMap[row.termID] = row[language];
+      }
+    });
+
+    // Apply LQA translations to merged data
+    mergedData.forEach((row) => {
+      if (row.termID && lqaMap[row.termID]) {
+        row[language] = lqaMap[row.termID];
+        row._lqaApplied = true; // Mark that this row has LQA applied
+      }
+    });
+
+    return mergedData;
   }
 
   generateTermDiffs(file1Data, file2Data, language, options) {
@@ -543,7 +604,11 @@ class DiffPageManager {
     this.newlineOnlyCount.textContent = results.stats.newlineOnly;
 
     // Update overall summary
-    this.overallSummary.textContent = `${results.stats.total} terms compared for ${language}`;
+    let summaryText = `${results.stats.total} terms compared for ${language}`;
+    if (this.file3Data) {
+      summaryText += ` (with LQA merged)`;
+    }
+    this.overallSummary.textContent = summaryText;
 
     // Generate diff table
     this.generateDiffTable(results.terms);
@@ -697,6 +762,7 @@ class DiffPageManager {
   async exportDiffAsHtml() {
     const language = this.compareLanguage.value;
     const timestamp = new Date().toLocaleString();
+    const lqaInfo = this.file3 ? `<p>LQA File: ${this.file3.name}</p>` : "";
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -728,6 +794,7 @@ class DiffPageManager {
         <h1>Localization Diff Report</h1>
         <p>Language: ${language} | Generated: ${timestamp}</p>
         <p>Files: ${this.file1.name} → ${this.file2.name}</p>
+        ${lqaInfo}
     </div>
     
     <div class="stats">
@@ -780,11 +847,17 @@ class DiffPageManager {
       this.file1Data = null;
       this.fileInput1.value = "";
       this.fileInfo1.classList.remove("show");
-    } else {
+    } else if (fileNumber === 2) {
       this.file2 = null;
       this.file2Data = null;
       this.fileInput2.value = "";
       this.fileInfo2.classList.remove("show");
+    } else {
+      this.file3 = null;
+      this.file3Data = null;
+      this.fileInput3.value = "";
+      this.fileInfo3.classList.remove("show");
+      this.clearLqaBtn.style.display = "none";
     }
 
     this.updateCompareButton();
@@ -793,6 +866,7 @@ class DiffPageManager {
   clearAll() {
     this.clearFile(1);
     this.clearFile(2);
+    this.clearFile(3);
     this.comparisonResults = null;
     this.availableLanguages = new Set(["English"]);
     this.updateLanguageSelector();
