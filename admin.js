@@ -976,21 +976,6 @@ class AdminManager {
     try {
       const serverFileStatuses = [];
 
-      for (const language of this.languages) {
-        try {
-          const fileStatus = await this.checkServerFileStatus(language);
-          serverFileStatuses.push(fileStatus);
-        } catch (error) {
-          console.error(`Error checking ${language}:`, error);
-          serverFileStatuses.push({
-            language,
-            hasFile: false,
-            isMerged: false,
-            error: error.message,
-          });
-        }
-      }
-
       // Also check LQA files
       const lqaFileStatuses = [];
       for (const language of this.languages) {
@@ -1003,6 +988,21 @@ class AdminManager {
             language,
             hasLQAFile: false,
             lqaIsMerged: false,
+            error: error.message,
+          });
+        }
+      }
+
+      for (const language of this.languages) {
+        try {
+          const fileStatus = await this.checkServerFileStatus(language);
+          serverFileStatuses.push(fileStatus);
+        } catch (error) {
+          console.error(`Error checking ${language}:`, error);
+          serverFileStatuses.push({
+            language,
+            hasFile: false,
+            isMerged: false,
             error: error.message,
           });
         }
