@@ -349,8 +349,7 @@ export function checkEnhancedMergeStatus(
     }
   }
 
-  const allValidMerged =
-    validTermsTotal > 0 && validTermsMatched === validTermsTotal;
+  const allValidMerged = validTermsMatched === validTermsTotal;
   const hasOutdatedTerms = outdatedTerms.length > 0;
 
   // Log unmerged terms to console if file is marked as unmerged
