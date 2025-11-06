@@ -992,6 +992,7 @@ class AdminManager {
           });
         }
       }
+      this.lqaFileStatuses = lqaFileStatuses;
 
       for (const language of this.languages) {
         try {
@@ -1010,7 +1011,6 @@ class AdminManager {
 
       // Store server file statuses and LQA statuses
       this.serverFileStatuses = serverFileStatuses;
-      this.lqaFileStatuses = lqaFileStatuses;
       this.populateLanguagesList();
 
       this.displayServerFileStatuses(serverFileStatuses, lqaFileStatuses);
