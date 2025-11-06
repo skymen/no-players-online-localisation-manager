@@ -1473,6 +1473,13 @@ class AdminManager {
   }
 
   async mergeAllUnmergedFiles() {
+    const button = document.getElementById("mergeAllUnmergedBtn");
+    const originalText = button.textContent;
+
+    // Show spinner
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner"></span>Merging...';
+
     this.showStatus("Merging all unmerged server files...");
 
     try {
@@ -1505,10 +1512,21 @@ class AdminManager {
       }
     } catch (error) {
       this.showStatus(`Error merging files: ${error.message}`);
+    } finally {
+      // Restore button state
+      button.innerHTML = originalText;
+      button.disabled = false;
     }
   }
 
   async mergeAllUnmergedLQAFiles() {
+    const button = document.getElementById("mergeAllLQABtn");
+    const originalText = button.textContent;
+
+    // Show spinner
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner"></span>Merging...';
+
     this.showStatus("Merging all unmerged LQA files...");
 
     try {
@@ -1544,6 +1562,10 @@ class AdminManager {
       }
     } catch (error) {
       this.showStatus(`Error merging LQA files: ${error.message}`);
+    } finally {
+      // Restore button state
+      button.innerHTML = originalText;
+      button.disabled = false;
     }
   }
 
